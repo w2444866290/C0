@@ -797,10 +797,12 @@ public final class Analyser {
 
         symbolStack.push(new Token(TokenType.END, '#', new Pos(0,0), new Pos(0,0)));
 
+        Boolean isEmpty = false;
         Token curOut = null;
         // 如果是',' or ';' or '{' 停止读取
         if (check(TokenType.COMMA) || check(TokenType.SEMICOLON)
-                || check(TokenType.L_BRACE)) {
+                || check(TokenType.L_BRACE) || check(TokenType.R_PAREN)) {
+            isEmpty = true;
             curOut = new Token(TokenType.END, '#', new Pos(0,0), new Pos(0,0));
         }
         else curOut = next();
@@ -1020,8 +1022,9 @@ public final class Analyser {
                 throw new AnalyzeError(ErrorCode.ExpectedToken, curOut.getStartPos());
         }
 
-        if (symbolStack.peek().getTokenType() != TokenType.NONE || symbolStack.size() != 2)
-            throw new AnalyzeError(ErrorCode.ExpectedToken, curOut.getStartPos());
+        if (!isEmpty)
+            if (symbolStack.peek().getTokenType() != TokenType.NONE || symbolStack.size() != 2 )
+                throw new AnalyzeError(ErrorCode.ExpectedToken, curOut.getStartPos());
     }
 
     private SymbolEntry stdFunc(Token fn_nameToken, Boolean genInstructions) throws CompileError {
