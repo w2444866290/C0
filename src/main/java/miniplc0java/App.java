@@ -86,7 +86,7 @@ public class App {
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
                 System.err.println(e);
-                System.exit(0);
+                System.exit(-1);
                 return;
             }
             for (Token token : tokens) {
@@ -101,7 +101,7 @@ public class App {
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
                 System.err.println(e);
-                System.exit(0);
+                System.exit(-1);
                 return;
             }
             // magic
