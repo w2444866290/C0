@@ -380,7 +380,7 @@ public final class Analyser {
         var expectedFuncPos = peekedToken.getStartPos();
 
         // 符号表中插入入口函数
-        addSymbol("_start", "void", -1, globCount++, 0,
+        addSymbol("_start", "void", -1, globCount, 0,
                 true, true, true, expectedFuncPos);
 
         // 分析函数定义
