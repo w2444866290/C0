@@ -63,7 +63,7 @@ public final class Analyser {
             if (se.isGlobal()) {
                 commands.add(se.isConstant ? 1 : 0);
                 commands.add(se.getBitLength());
-                if (se.isFunction())
+                if (se.isFunction() || se.getType() == "string")
                     commands.add(se.getName());
                 else
                     commands.add(0);
@@ -285,7 +285,7 @@ public final class Analyser {
     private void deleteSymbolByRet() {
         for (int i = 0; i < symbolTable.size(); i++) {
             var se = symbolTable.get(i);
-            if (se.getFunctionIndex() == funcCount && !se.isFunction()){
+            if (se.getFunctionIndex() == funcCount && !se.isFunction() && !se.isGlobal()){
                 if (symbolTable.peek().equals(se))
                     symbolTable.pop();
                 else
@@ -1035,7 +1035,8 @@ public final class Analyser {
                 isDeclared =  getFuncSymbolEntry("getint");
                 if (isDeclared == null) {
                     stdCount++;
-                    addSymbol("getint", "int", -1, globCount++, funcCount+stdCount,
+                    globCount++;
+                    addSymbol("getint", "int", -1, globCount, funcCount+stdCount,
                             true, true, true, fn_nameToken.getStartPos());
                     isDeclared =  getFuncSymbolEntry("getint");
                 }
@@ -1051,7 +1052,8 @@ public final class Analyser {
                 isDeclared =  getFuncSymbolEntry("getdouble");
                 if (isDeclared == null) {
                     stdCount++;
-                    addSymbol("getdouble", "double", -1, globCount++, funcCount+stdCount,
+                    globCount++;
+                    addSymbol("getdouble", "double", -1, globCount, funcCount+stdCount,
                             true, true, true, fn_nameToken.getStartPos());
                     isDeclared =  getFuncSymbolEntry("getdouble");
                 }
@@ -1067,7 +1069,8 @@ public final class Analyser {
                 isDeclared =  getFuncSymbolEntry("getchar");
                 if (isDeclared == null) {
                     stdCount++;
-                    addSymbol("getchar", "int", -1, globCount++, funcCount+stdCount,
+                    globCount++;
+                    addSymbol("getchar", "int", -1, globCount, funcCount+stdCount,
                             true, true, true, fn_nameToken.getStartPos());
                     isDeclared =  getFuncSymbolEntry("getchar");
                 }
@@ -1083,7 +1086,8 @@ public final class Analyser {
                 isDeclared =  getFuncSymbolEntry("putint");
                 if (isDeclared == null) {
                     stdCount++;
-                    addSymbol("putint", "void", -1, globCount++, funcCount+stdCount,
+                    globCount++;
+                    addSymbol("putint", "void", -1, globCount, funcCount+stdCount,
                             true, true, true, fn_nameToken.getStartPos());
                     isDeclared =  getFuncSymbolEntry("putint");
                 }
@@ -1100,7 +1104,8 @@ public final class Analyser {
                 isDeclared =  getFuncSymbolEntry("putdouble");
                 if (isDeclared == null) {
                     stdCount++;
-                    addSymbol("putdouble", "void", -1, globCount++, funcCount+stdCount,
+                    globCount++;
+                    addSymbol("putdouble", "void", -1, globCount, funcCount+stdCount,
                             true, true, true, fn_nameToken.getStartPos());
                     isDeclared =  getFuncSymbolEntry("putdouble");
                 }
@@ -1117,7 +1122,8 @@ public final class Analyser {
                 isDeclared =  getFuncSymbolEntry("putchar");
                 if (isDeclared == null) {
                     stdCount++;
-                    addSymbol("putchar", "int", -1, globCount++, funcCount+stdCount,
+                    globCount++;
+                    addSymbol("putchar", "int", -1, globCount, funcCount+stdCount,
                             true, true, true, fn_nameToken.getStartPos());
                     isDeclared =  getFuncSymbolEntry("putchar");
                 }
@@ -1134,7 +1140,8 @@ public final class Analyser {
                 isDeclared =  getFuncSymbolEntry("putstr");
                 if (isDeclared == null) {
                     stdCount++;
-                    addSymbol("putstr", "void", -1, globCount++, funcCount+stdCount,
+                    globCount++;
+                    addSymbol("putstr", "void", -1, globCount, funcCount+stdCount,
                             true, true, true, fn_nameToken.getStartPos());
                     isDeclared =  getFuncSymbolEntry("putstr");
                 }
@@ -1151,7 +1158,8 @@ public final class Analyser {
                 isDeclared =  getFuncSymbolEntry("putln");
                 if (isDeclared == null) {
                     stdCount++;
-                    addSymbol("putln", "void", -1, globCount++, funcCount+stdCount,
+                    globCount++;
+                    addSymbol("putln", "void", -1, globCount, funcCount+stdCount,
                             true, true, true, fn_nameToken.getStartPos());
                     isDeclared =  getFuncSymbolEntry("putln");
                 }

@@ -68,7 +68,7 @@ public class Tokenizer {
 
     private Token lexStringLiteral() throws TokenizeError {
         StringBuilder buf = new StringBuilder();
-        buf.append(it.nextChar());
+        it.nextChar();
         char peek = it.peekChar();
 
         // 直到查看下一个字符不是数字或字母为止:
@@ -76,7 +76,7 @@ public class Tokenizer {
         while (true) {
             // end
             if (peek == '"') {
-                buf.append(it.nextChar());
+                it.nextChar();
                 peek = it.peekChar();
                 break;
             }
