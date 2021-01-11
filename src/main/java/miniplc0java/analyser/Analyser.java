@@ -556,22 +556,28 @@ public final class Analyser {
         var ifLength = end - begin;
 
         // 回填
-        for (int i = end - 1; i >= 0; i--) {
-            var cm = instructions.get(i);
-            if (cm.getOpt().toString() == "br") {
-                cm.setX(ifLength);
-                break;
+        instructions.get(begin).setX(ifLength);
+
+        if (nextIf(TokenType.ELSE_KW) != null) {
+            begin = instructions.size();
+
+            instructions.add(new Instruction(Operation.br, 0, funcCount));
+
+            if (check(TokenType.L_BRACE))
+                analyseBlockStatement(false);
+            else if(check(TokenType.IF_KW)) {
+                analyseIfStatement();
             }
+
+            end = instructions.size();
+            ifLength = end - begin;
+
+            // 回填
+            instructions.get(begin).setX(ifLength);
+
         }
 
         instructions.add(new Instruction(Operation.br, 0, funcCount));
-
-        if (nextIf(TokenType.ELSE_KW) != null) {
-            if (check(TokenType.L_BRACE))
-                analyseBlockStatement(false);
-            else if(check(TokenType.IF_KW))
-                analyseIfStatement();
-        }
     }
 
     private void analyseWhileStatement() throws CompileError {
