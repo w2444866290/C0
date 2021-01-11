@@ -103,186 +103,6 @@ public final class Analyser {
     public ArrayList<Instruction> getInstructions() {
         return instructions;
     }
-    private String hexaZeroFill(String hexNum, int zeroNum) {
-        int restLength = zeroNum - hexNum.length();
-        StringBuilder GC = new StringBuilder();
-        while (restLength-- > 0) {
-            GC.append(0);
-        }
-        GC.append(hexNum);
-        return GC.toString();
-    }
-    private String translateCommand(Instruction ins) {
-        String x = null;
-        StringBuilder res = new StringBuilder();
-
-        switch (ins.getOpt()) {
-            case nop:
-                return "00";
-            case pop:
-                return "02";
-            case dup:
-                return "04";
-            case load8:
-                return "10";
-            case load16:
-                return "11";
-            case load32:
-                return "12";
-            case load64:
-                return "13";
-            case store8:
-                return "14";
-            case store16:
-                return "15";
-            case store32:
-                return "16";
-            case store64:
-                return "17";
-            case alloc:
-                return "18";
-            case free:
-                return "19";
-            case addi:
-                return "20";
-            case subi:
-                return "21";
-            case muli:
-                return "22";
-            case divi:
-                return "23";
-            case addf:
-                return "24";
-            case subf:
-                return "25";
-            case mulf:
-                return "26";
-            case divf:
-                return "27";
-            case divu:
-                return "28";
-            case shl:
-                return "29";
-            case shr:
-                return "2a";
-            case and:
-                return "2b";
-            case or:
-                return "2c";
-            case xor:
-                return "2d";
-            case not:
-                return "2e";
-            case cmpi:
-                return "30";
-            case cmpu:
-                return "31";
-            case cmpf:
-                return "32";
-            case negi:
-                return "34";
-            case negf:
-                return "35";
-            case itof:
-                return "36";
-            case ftoi:
-                return "37";
-            case shrl:
-                return "38";
-            case setlt:
-                return "39";
-            case setgt:
-                return "3a";
-            case ret:
-                return "49";
-            case scani:
-                return "50";
-            case scanc:
-                return "51";
-            case scanf:
-                return "52";
-            case printi:
-                return "54";
-            case printc:
-                return "55";
-            case printf:
-                return "56";
-            case prints:
-                return "57";
-            case println:
-                return "58";
-            case panic:
-                return "fe";
-            case push:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 16);
-                res.append("01");
-                res.append(x);
-                return res.toString();
-            case popn:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("02");
-                res.append(x);
-                return res.toString();
-            case loca:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("0a");
-                res.append(x);
-                return res.toString();
-            case arga:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("0b");
-                res.append(x);
-                return res.toString();
-            case globa:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("0c");
-                res.append(x);
-                return res.toString();
-            case stackalloc:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("1a");
-                res.append(x);
-                return res.toString();
-            case br:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("41");
-                res.append(x);
-                return res.toString();
-            case brfalse:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("42");
-                res.append(x);
-                return res.toString();
-            case brtrue:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("43");
-                res.append(x);
-                return res.toString();
-            case call:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("48");
-                res.append(x);
-                return res.toString();
-            case callname:
-                x = Integer.toHexString(ins.getX());
-                x = hexaZeroFill(x, 8);
-                res.append("4a");
-                res.append(x);
-                return res.toString();
-            default:
-                return null;
-        }
-    }
 
     /**
      * 查看下一个 Token
@@ -607,7 +427,7 @@ public final class Analyser {
         }
     }
 
-    private Boolean analyseStatement() throws CompileError {
+    private Boolean analyseStatement(Boolean funcNeedRet) throws CompileError {
         var peekedToken = peek();
 
         if (peekedToken.getTokenType() == TokenType.LET_KW ||
@@ -621,7 +441,7 @@ public final class Analyser {
             analyseWhileStatement();
         }
         else if (peekedToken.getTokenType() == TokenType.RETURN_KW) {
-            analyseReturnStatement();
+            analyseReturnStatement(funcNeedRet);
             return true;
         }
         else if (peekedToken.getTokenType() == TokenType.L_BRACE) {
@@ -785,10 +605,11 @@ public final class Analyser {
         instructions.add((new Instruction(Operation.br, backforward, funcCount)));
     }
 
-    private void analyseReturnStatement() throws CompileError {
+    private void analyseReturnStatement(Boolean funcNeedRet) throws CompileError {
         expect(TokenType.RETURN_KW);
 
-        instructions.add(new Instruction(Operation.arga, 0, funcCount));
+        if (funcNeedRet)
+            instructions.add(new Instruction(Operation.arga, 0, funcCount));
 
         if (nextIf(TokenType.SEMICOLON) == null) {
             analyseOPG();
@@ -799,7 +620,7 @@ public final class Analyser {
         instructions.add(new Instruction(Operation.ret, funcCount));
     }
 
-    private void analyseBlockStatement(Boolean funcNeedRet) throws CompileError {
+    private Boolean analyseBlockStatement(Boolean funcNeedRet) throws CompileError {
         expect(TokenType.L_BRACE);
 
         // 确认类型函数最后一个语句为返回语句
@@ -807,12 +628,11 @@ public final class Analyser {
 
         while (nextIf(TokenType.R_BRACE) == null) {
             isRet = false;
-            if (analyseStatement())
+            if (analyseStatement(funcNeedRet))
                 isRet = true;
         }
 
-        if (funcNeedRet && !isRet)
-            throw new AnalyzeError(ErrorCode.FunctionNeedReturn, peekedToken.getStartPos());
+        return isRet;
     }
 
     private void analyseFunction() throws CompileError {
@@ -848,7 +668,7 @@ public final class Analyser {
         // 记录函数体指令长度
         var begin = instructions.size();
 
-        analyseBlockStatement(needRet);
+        var isRet = analyseBlockStatement(needRet);
 
         var end = instructions.size();
 
@@ -861,10 +681,13 @@ public final class Analyser {
             instructions.add(new Instruction(Operation.popn, popNum, funcCount));
 
         // 函数返回，localCount 归零
-        // void函数，添加ret指令
-        if (!needRet) {
-            instructions.add(new Instruction(Operation.ret, funcCount));
-            _this.setBodyCount(end - begin + 1);
+        if (!isRet) {
+            // void函数，添加ret指令
+            if (!needRet) {
+                instructions.add(new Instruction(Operation.ret, funcCount));
+                _this.setBodyCount(end - begin + 1);
+            }
+            else throw new AnalyzeError(ErrorCode.FunctionNeedReturn, peek().getStartPos());
         }
         else _this.setBodyCount(end - begin);
         deleteSymbolByRet();
