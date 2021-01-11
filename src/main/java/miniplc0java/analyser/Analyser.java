@@ -600,13 +600,7 @@ public final class Analyser {
         var backforward = begin - end - 1;
 
         // 回填
-        for (int i = end - 1; i >= 0; i--) {
-            var cm = instructions.get(i);
-            if (cm.getOpt().toString() == "br") {
-                cm.setX(loopLength);
-                break;
-            }
-        }
+        instructions.get(afterJudge).setX(loopLength);
 
         instructions.add((new Instruction(Operation.br, backforward, funcCount)));
     }
