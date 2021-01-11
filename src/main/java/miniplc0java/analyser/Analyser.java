@@ -963,7 +963,7 @@ public final class Analyser {
                                             true, true, nameToken.getStartPos());
                                     StringVar = getGlobalSymbolEntry((String) nameToken.getValue());
                                 }
-                                instructions.add(new Instruction(Operation.push, StringVar.getGlobalIndex()));
+                                instructions.add(new Instruction(Operation.push, StringVar.getGlobalIndex(), funcCount));
                                 break;
                             case IDENT:
                                 var SE = getSymbolEntryByName((String) nameToken.getValue());
