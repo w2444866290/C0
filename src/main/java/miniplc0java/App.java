@@ -90,7 +90,7 @@ public class App {
                 return;
             }
             for (Token token : tokens) {
-                output.println(token.toString());
+                System.out.print(token.getValue().toString());
             }
         } else if (result.getBoolean("analyse")) {
             // analyze
