@@ -435,17 +435,19 @@ public final class Analyser {
             analyseDeclareStatement(false);
         }
         else if (peekedToken.getTokenType() == TokenType.IF_KW) {
-            analyseIfStatement();
+            var isRet = analyseIfStatement(funcNeedRet);
+            return isRet;
         }
         else if (peekedToken.getTokenType() == TokenType.WHILE_KW) {
-            analyseWhileStatement();
+            var isRet = analyseWhileStatement(funcNeedRet);
+            return isRet;
         }
         else if (peekedToken.getTokenType() == TokenType.RETURN_KW) {
             analyseReturnStatement(funcNeedRet);
             return true;
         }
         else if (peekedToken.getTokenType() == TokenType.L_BRACE) {
-            analyseBlockStatement(false);
+            analyseBlockStatement(funcNeedRet);
         }
         else if (peekedToken.getTokenType() == TokenType.SEMICOLON){
             expect(TokenType.SEMICOLON);
@@ -541,7 +543,7 @@ public final class Analyser {
         expect(TokenType.SEMICOLON);
     }
 
-    private void analyseIfStatement() throws CompileError {
+    private Boolean analyseIfStatement(Boolean funNeedRet) throws CompileError {
         expect(TokenType.IF_KW);
 
         analyseOPG();
@@ -550,10 +552,12 @@ public final class Analyser {
 
         instructions.add(new Instruction(Operation.br, 0, funcCount));
 
-        analyseBlockStatement(false);
+        var isRet = analyseBlockStatement(funNeedRet);
 
         var end = instructions.size();
         var ifLength = end - begin;
+        if(isRet)
+            ifLength--;
 
         // 回填
         instructions.get(begin).setX(ifLength);
@@ -561,26 +565,31 @@ public final class Analyser {
         if (nextIf(TokenType.ELSE_KW) != null) {
             begin = instructions.size();
 
-            instructions.add(new Instruction(Operation.br, 0, funcCount));
+            if(!isRet)
+                instructions.add(new Instruction(Operation.br, 0, funcCount));
 
             if (check(TokenType.L_BRACE))
-                analyseBlockStatement(false);
+                analyseBlockStatement(funNeedRet);
             else if(check(TokenType.IF_KW)) {
-                analyseIfStatement();
+                analyseIfStatement(funNeedRet);
             }
 
-            end = instructions.size();
-            ifLength = end - begin;
+            if(!isRet) {
+                end = instructions.size();
+                ifLength = end - begin;
 
-            // 回填
-            instructions.get(begin).setX(ifLength);
-
+                // 回填
+                instructions.get(begin).setX(ifLength);
+            }
         }
 
-        instructions.add(new Instruction(Operation.br, 0, funcCount));
+        if (!isRet)
+            instructions.add(new Instruction(Operation.br, 0, funcCount));
+
+        return isRet;
     }
 
-    private void analyseWhileStatement() throws CompileError {
+    private Boolean analyseWhileStatement(Boolean funNeedRet) throws CompileError {
         expect(TokenType.WHILE_KW);
 
         instructions.add(new Instruction(Operation.br, 0, funcCount));
@@ -593,7 +602,7 @@ public final class Analyser {
 
         instructions.add(new Instruction(Operation.br, 0, funcCount));
 
-        analyseBlockStatement(false);
+        var isRet = analyseBlockStatement(funNeedRet);
 
         var end = instructions.size();
         var loopLength = end - afterJudge;
@@ -603,6 +612,8 @@ public final class Analyser {
         instructions.get(afterJudge).setX(loopLength);
 
         instructions.add((new Instruction(Operation.br, backforward, funcCount)));
+
+        return isRet;
     }
 
     private void analyseReturnStatement(Boolean funcNeedRet) throws CompileError {
@@ -627,7 +638,6 @@ public final class Analyser {
         var isRet = false;
 
         while (nextIf(TokenType.R_BRACE) == null) {
-            isRet = false;
             if (analyseStatement(funcNeedRet))
                 isRet = true;
         }
