@@ -80,15 +80,24 @@ public class Tokenizer {
                 peek = it.peekChar();
                 break;
             }
+            if (it.isEOF())
+                throw new TokenizeError(ErrorCode.InvalidInput, it.currentPos());
+
             // escape_sequence
-            else if (peek == '\\') {
-                buf.append(it.nextChar());
+            if (peek == '\\') {
+                it.nextChar();
                 peek = it.peekChar();
-                if (peek == '\\' || peek == '"' || peek == '\''
-                        || peek == 'n' || peek == 'r' || peek == 't') {
-                    buf.append(it.nextChar());
-                    peek = it.peekChar();
-                }else throw new TokenizeError(ErrorCode.InvalidStringValue, it.currentPos());
+                switch (peek) {
+                    case '\\': buf.append('\\');break;
+                    case '"': buf.append('"');break;
+                    case '\'': buf.append('\\');break;
+                    case 'n': buf.append('\n');break;
+                    case 't': buf.append('\t');break;
+                    case 'r': buf.append('\r');break;
+                    default:
+                        throw new TokenizeError(ErrorCode.InvalidInput, it.currentPos());
+                }
+                it.nextChar();
             }
             // string_regular_char
             else {

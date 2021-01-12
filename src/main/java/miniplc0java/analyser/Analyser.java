@@ -56,7 +56,7 @@ public final class Analyser {
     private List<Object> generateCode() {
         List<Object> commands = new ArrayList<>();
 
-        commands.add(globCount);
+        commands.add(globCount + 1);
         // 全局变量数组
         for (SymbolEntry se:
                 symbolTable) {
