@@ -239,6 +239,7 @@ public class App {
                     }
                 }
             }
+            System.exit(0);
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");
             System.exit(3);
