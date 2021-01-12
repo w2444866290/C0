@@ -60,7 +60,7 @@ public final class Analyser {
         // 全局变量数组
         for (SymbolEntry se:
                 symbolTable) {
-            if (se.isGlobal()) {
+            if (se.isGlobal() && !se.isLocal()) {
                 commands.add(se.isConstant ? 1 : 0);
                 commands.add(se.getBitLength());
                 if (se.isFunction() || se.getType() == "string")
