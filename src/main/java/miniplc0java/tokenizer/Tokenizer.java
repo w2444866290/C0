@@ -90,14 +90,15 @@ public class Tokenizer {
                 switch (peek) {
                     case '\\': buf.append('\\');break;
                     case '"': buf.append('"');break;
-                    case '\'': buf.append('\\');break;
+                    case '\'': buf.append('\'');break;
                     case 'n': buf.append('\n');break;
                     case 't': buf.append('\t');break;
                     case 'r': buf.append('\r');break;
                     default:
-                        throw new TokenizeError(ErrorCode.InvalidInput, it.currentPos());
+                        buf.append('\\');
                 }
                 it.nextChar();
+                peek = it.peekChar();
             }
             // string_regular_char
             else {
