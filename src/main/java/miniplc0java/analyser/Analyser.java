@@ -713,13 +713,12 @@ public final class Analyser {
 
         _this.setLocSlots(localCount);
 
-        // 返回前检查是否需要 popN
-        var popNum = popN(funcCount);
-        if (popNum > 0)
-            instructions.add(new Instruction(Operation.popn, popNum, funcCount));
-
         // 函数返回，localCount 归零
         if (!isRet) {
+            // 返回前检查是否需要 popN
+            var popNum = popN(funcCount);
+            if (popNum > 0)
+                instructions.add(new Instruction(Operation.popn, popNum, funcCount));
             // void函数，添加ret指令
             if (!needRet) {
                 instructions.add(new Instruction(Operation.ret, funcCount));
