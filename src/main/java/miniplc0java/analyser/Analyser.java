@@ -214,10 +214,15 @@ public final class Analyser {
         else {
             int i = 0;
             for ( ; i < res.size(); i++) {
-                if (!res.get(i).isGlobal())
+                var se = res.get(i);
+                //     局部变量     ||       参数
+                if (!se.isGlobal() || (se.isGlobal() && se.isLocal()))
                     break;
             }
-            return res.get(i);
+            if (i == res.size())
+                return null;
+            else
+                return res.get(i);
         }
     }
 
