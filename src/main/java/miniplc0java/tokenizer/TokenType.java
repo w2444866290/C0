@@ -2,6 +2,7 @@ package miniplc0java.tokenizer;
 
 public enum TokenType {
     UINT,
+    DOUBLE,
     STRING,
     IDENT,
     FN_KW,
@@ -12,6 +13,8 @@ public enum TokenType {
     IF_KW,
     ELSE_KW,
     RETURN_KW,
+    BREAK_KW,
+    CONTINUE_KW,
     PLUS,
     MINUS,
     NEGATE,
@@ -41,6 +44,8 @@ public enum TokenType {
         switch (this) {
             case UINT:
                 return "UINT";
+            case DOUBLE:
+                return "DOUBLE";
             case STRING:
                 return "STRING";
             case IDENT:
@@ -61,6 +66,10 @@ public enum TokenType {
                 return "ELSE_KW";
             case RETURN_KW:
                 return "RETURN_KW";
+            case BREAK_KW:
+                return "BREAK_KW";
+            case CONTINUE_KW:
+                return "CONTINUE_KW";
             case PLUS:
                 return "PLUS";
             case MINUS:

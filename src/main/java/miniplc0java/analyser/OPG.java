@@ -114,6 +114,7 @@ public class OPG {
         switch (tt) {
             case UINT:
             case STRING:
+            case DOUBLE:
             case IDENT:
                 return "i";
             case AS_KW:

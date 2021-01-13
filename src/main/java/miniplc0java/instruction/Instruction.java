@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class Instruction {
     private Operation opt;
-    Integer x;
+    Object x;
     Integer funcIndex;
 
     public Instruction(Operation opt, Integer funcIndex) {
@@ -13,7 +13,7 @@ public class Instruction {
         this.funcIndex = funcIndex;
     }
 
-    public Instruction(Operation opt, Integer x, Integer funcIndex) {
+    public Instruction(Operation opt, Object x, Integer funcIndex) {
         this.opt = opt;
         this.x = x;
         this.funcIndex = funcIndex;
@@ -42,7 +42,7 @@ public class Instruction {
         this.opt = opt;
     }
 
-    public Integer getX() {
+    public Object getX() {
         return x;
     }
 

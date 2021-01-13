@@ -377,67 +377,67 @@ public class App {
             case panic:
                 return "fe";
             case push:
-                x = Integer.toHexString(ins.getX());
+                x = Long.toHexString((Long) ins.getX());
                 x = hexaZeroFill(x, 16);
                 res.append("01");
                 res.append(x);
                 return res.toString();
             case popn:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("02");
                 res.append(x);
                 return res.toString();
             case loca:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("0a");
                 res.append(x);
                 return res.toString();
             case arga:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("0b");
                 res.append(x);
                 return res.toString();
             case globa:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("0c");
                 res.append(x);
                 return res.toString();
             case stackalloc:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("1a");
                 res.append(x);
                 return res.toString();
             case br:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("41");
                 res.append(x);
                 return res.toString();
             case brfalse:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("42");
                 res.append(x);
                 return res.toString();
             case brtrue:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("43");
                 res.append(x);
                 return res.toString();
             case call:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("48");
                 res.append(x);
                 return res.toString();
             case callname:
-                x = Integer.toHexString(ins.getX());
+                x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 8);
                 res.append("4a");
                 res.append(x);

@@ -35,6 +35,22 @@ public class TokenizerTest {
     }
 
     @Test
+    public void TestlexDouble() {
+        Scanner scanner;
+        String input = new String("0.01 01.1 1.0 2.1E2 2.1E+2 2.1E-2 2.1e-2");
+        scanner = new Scanner(input);
+        var iter = new StringIter(scanner);
+
+        var outString = RunTokenizer(iter);
+
+        assertEquals("DOUBLE4576918229304087675/" +
+                "DOUBLE4607632778762754458/" +
+                "DOUBLE4607182418800017408/" +
+                "DOUBLE4641592734702895104/DOUBLE4641592734702895104/" +
+                "DOUBLE4581710059307609883/DOUBLE4581710059307609883//", outString);
+    }
+
+    @Test
     public void TestlexStringLiteral() {
         Scanner scanner;
         String input = new String("\"\\\\\\n\\t\\r\" \"hello!\"");
@@ -50,13 +66,13 @@ public class TokenizerTest {
     @Test
     public void TestlexIdentOrKeyword() {
         Scanner scanner;
-        String input = new String("\t\nfn let const as while if else return _abc ident");
+        String input = new String("\t\nfn let const as while if else return break continue _abc ident");
         scanner = new Scanner(input);
         var iter = new StringIter(scanner);
 
         var outString = RunTokenizer(iter);
 
-        assertEquals("FN_KW/LET_KW/CONST_KW/AS_KW/WHILE_KE/IF_KW/ELSE_KW/RETURN_KW/IDENT_abc/IDENTident//", outString);
+        assertEquals("FN_KW/LET_KW/CONST_KW/AS_KW/WHILE_KW/IF_KW/ELSE_KW/RETURN_KW/BREAK_KW/CONTINUE_KW/IDENT_abc/IDENTident//", outString);
     }
 
     @Test

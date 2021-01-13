@@ -5,7 +5,9 @@ import miniplc0java.error.ErrorCode;
 import org.checkerframework.checker.units.qual.Speed;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Tokenizer {
 
@@ -35,7 +37,7 @@ public class Tokenizer {
         char peek = it.peekChar();
 
         if (Character.isDigit(peek)) {
-            return lexUInt();
+            return lexNumber();
         } else if (peek == '"') {
             return lexStringLiteral();
         }  else if (Character.isLetter(peek) || peek == '_') {
@@ -45,7 +47,7 @@ public class Tokenizer {
         }
     }
 
-    private Token lexUInt() throws TokenizeError {
+    private Token lexNumber() throws TokenizeError {
         char peek = it.peekChar();
         StringBuilder buf = new StringBuilder();
 
@@ -56,9 +58,16 @@ public class Tokenizer {
             peek = it.peekChar();
         }
 
+        // 如果是 digit + '.' 的形式， 判断浮点数
+        if (peek == '.') return lexDouble(buf.toString());
+        // 否则为整型
+        else return lexUInt(buf.toString());
+    }
+
+    private Token lexUInt(String num) throws TokenizeError {
         // 解析存储的字符串为无符号整数
         // 解析成功则返回无符号整数类型的token，否则返回编译错误
-        int uint = Integer.parseInt(buf.toString());
+        int uint = Integer.parseInt(num);
         if (!Double.isNaN(uint)) {
             return new Token(TokenType.UINT, uint, it.previousPos(), it.currentPos());
         }
@@ -66,6 +75,58 @@ public class Tokenizer {
             // todo: is it right?
             throw new TokenizeError(ErrorCode.ConstantNeedValue, it.currentPos());
         }
+    }
+
+    private Token lexDouble(String integral) throws TokenizeError {
+        it.nextChar();
+        char peek = it.peekChar();
+        StringBuilder buf = new StringBuilder();
+
+        buf.append(integral);
+
+        // . 后是数字，则可以判断是浮点数
+        if (Character.isDigit(peek)) {
+            buf.append(".");
+            while (Character.isDigit(peek)) {
+                buf.append(it.nextChar());
+                peek = it.peekChar();
+            }
+            double db = Double.parseDouble(buf.toString());
+            if (Double.isNaN(db))
+                throw new TokenizeError(ErrorCode.ConstantNeedValue, it.currentPos());
+
+            // 判断之后有无指数
+            if (peek == 'e' || peek == 'E') {
+                it.nextChar();
+                peek = it.peekChar();
+                StringBuilder exp = new StringBuilder();
+
+                // 检查符号
+                var sign = 1;
+                if (peek == '+' || peek == '-') {
+                    sign = peek == '-' ? -1 : 1;
+                    it.nextChar();
+                    peek = it.peekChar();
+                }
+
+                if (Character.isDigit(peek)) {
+                    while (Character.isDigit(peek)) {
+                        exp.append(it.nextChar());
+                        peek = it.peekChar();
+                    }
+                    int e = Integer.parseInt(exp.toString());
+                    if (Double.isNaN(e))
+                        throw new TokenizeError(ErrorCode.ConstantNeedValue, it.currentPos());
+
+                    db = db * Math.pow(10, sign * e);
+                }
+                else throw new TokenizeError(ErrorCode.ConstantNeedValue, it.currentPos());
+            }
+
+            return new Token(TokenType.DOUBLE, Double.doubleToRawLongBits(db), it.previousPos(), it.currentPos());
+        }
+        // 否则出错
+        else throw new TokenizeError(ErrorCode.ExpectedToken, it.currentPos());
     }
 
     private Token lexStringLiteral() throws TokenizeError {
@@ -153,6 +214,12 @@ public class Tokenizer {
 
             case "return":
                 return  new Token(TokenType.RETURN_KW, "return", it.previousPos(), it.currentPos());
+
+            case "break":
+                return  new Token(TokenType.BREAK_KW, "break", it.previousPos(), it.currentPos());
+
+            case "continue":
+                return  new Token(TokenType.CONTINUE_KW, "continue", it.previousPos(), it.currentPos());
 
             default:
                 return new Token(TokenType.IDENT, token, it.previousPos(), it.currentPos());
@@ -259,8 +326,8 @@ public class Tokenizer {
                 }
                 tokens.add(token);
                 tokenbuilder.append(token.getTokenType().toString());
-                if (token.getTokenType() == TokenType.IDENT ||
-                        token.getTokenType() == TokenType.UINT || token.getTokenType() == TokenType.STRING) {
+                if (token.getTokenType() == TokenType.IDENT || token.getTokenType() == TokenType.UINT ||
+                        token.getTokenType() == TokenType.DOUBLE || token.getTokenType() == TokenType.STRING) {
                     tokenbuilder.append(token.getValue().toString());
                 }
                 tokenbuilder.append('/');

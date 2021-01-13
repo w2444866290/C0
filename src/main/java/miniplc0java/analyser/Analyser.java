@@ -989,6 +989,10 @@ public final class Analyser {
                                 instructions.add(new Instruction(Operation.push,
                                         (Integer) nameToken.getValue(), funcCount));
                                 break;
+                            case DOUBLE:
+                                instructions.add(new Instruction(Operation.push,
+                                        (Long) nameToken.getValue(), funcCount));
+                                break;
                             case STRING:
                                 var StringVar = getGlobalSymbolEntry((String) nameToken.getValue());
                                 if (StringVar == null) {
@@ -1273,13 +1277,13 @@ public final class Analyser {
                     case globa:
                         popNum++;break;
                     case popn:
-                        popNum -= cm.getX();
+                        popNum -= (Integer) cm.getX();
                         break;
                     case stackalloc:
                         // 分配返回地址时，记录栈内空间的大小
-                        if (prevNum > popNum + cm.getX() || prevNum == -1)
-                            prevNum = popNum + cm.getX();
-                        popNum += cm.getX();
+                        if (prevNum > popNum + (Integer) cm.getX() || prevNum == -1)
+                            prevNum = popNum + (Integer) cm.getX();
+                        popNum += (Integer) cm.getX();
                         break;
                     case call:
                     case callname:
