@@ -200,12 +200,25 @@ public final class Analyser {
      * @param name          名字
      */
     private SymbolEntry getSymbolEntryByName(String name) {
+        ArrayList<SymbolEntry> res = new ArrayList<>();
+
         for (SymbolEntry SE:
              this.symbolTable) {
             if (SE.getName().equals(name))
-                return SE;
+                res.add(SE);
         }
-        return null;
+
+        // 优先寻找局部变量 或 参数
+        if (res.size() == 0) return null;
+        else if (res.size() == 1) return res.get(0);
+        else {
+            int i = 0;
+            for ( ; i < res.size(); i++) {
+                if (!res.get(i).isGlobal())
+                    break;
+            }
+            return res.get(i);
+        }
     }
 
     /**
@@ -694,7 +707,6 @@ public final class Analyser {
         var end = instructions.size();
 
         _this.setLocSlots(localCount);
-
 
         // 返回前检查是否需要 popN
         var popNum = popN(funcCount);
