@@ -972,6 +972,8 @@ public final class Analyser {
                             case NEQ:
                                 instructions.add(new Instruction(Operation.cmpi, funcCount));
                                 instructions.add(new Instruction(Operation.brtrue, 1, funcCount));
+                            case AS_KW:
+                                var peekedToken = peek();
                             default:
                                 break;
                         }

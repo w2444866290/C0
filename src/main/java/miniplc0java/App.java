@@ -377,7 +377,12 @@ public class App {
             case panic:
                 return "fe";
             case push:
-                x = Long.toHexString((Long) ins.getX());
+                var tmpX = ins.getX();
+                System.out.println((tmpX instanceof Long) + "   " + (tmpX instanceof Integer));
+                if (tmpX instanceof Long)
+                    x = Long.toHexString((Long) ins.getX());
+                else
+                    x = Integer.toHexString((Integer) ins.getX());
                 x = hexaZeroFill(x, 16);
                 res.append("01");
                 res.append(x);
