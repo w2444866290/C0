@@ -837,8 +837,8 @@ public final class Analyser {
             if (curOut.getTokenType() == TokenType.MINUS) {
                 if (prevOut.getTokenType() == TokenType.END)
                     curOut.setTokenType(TokenType.NEGATE);
-                else if (symbolStack.peek().getTokenType() != TokenType.NONE &&
-                        symbolStack.peek().getTokenType() != TokenType.R_PAREN){
+                else if (prevOut.getTokenType() != TokenType.IDENT &&
+                        prevOut.getTokenType() != TokenType.UINT && prevOut.getTokenType() != TokenType.R_PAREN){
                     curOut.setTokenType(TokenType.NEGATE);
                 }
             }
