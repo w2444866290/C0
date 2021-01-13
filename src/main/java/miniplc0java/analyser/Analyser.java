@@ -482,6 +482,8 @@ public final class Analyser {
         expect(TokenType.COLON);
 
         var type = analyseType();
+        if (type == "void")
+            throw new AnalyzeError(ErrorCode.ExpectedToken, peek().getStartPos());
 
         boolean initialized = check(TokenType.ASSIGN);
 
@@ -519,6 +521,8 @@ public final class Analyser {
         expect(TokenType.COLON);
 
         var type = analyseType();
+        if (type == "void")
+            throw new AnalyzeError(ErrorCode.ExpectedToken, peek().getStartPos());
 
         expect(TokenType.ASSIGN);
 
@@ -833,8 +837,8 @@ public final class Analyser {
             if (curOut.getTokenType() == TokenType.MINUS) {
                 if (prevOut.getTokenType() == TokenType.END)
                     curOut.setTokenType(TokenType.NEGATE);
-                else if (prevOut.getTokenType() != TokenType.L_PAREN && prevOut.getTokenType() != TokenType.UINT &&
-                        prevOut.getTokenType() != TokenType.STRING && prevOut.getTokenType() != TokenType.IDENT ){
+                else if (symbolStack.peek().getTokenType() != TokenType.NONE &&
+                        symbolStack.peek().getTokenType() != TokenType.R_PAREN){
                     curOut.setTokenType(TokenType.NEGATE);
                 }
             }

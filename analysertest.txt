@@ -1,22 +1,12 @@
-fn fib(x: int) -> int {
-    if x<=1 {
-        return 1;
-    }
-    let result: int = fib(x - 1);
-    result = result + fib(x - 2);
-    return result;
+fn EightWhile()->int{
+    let a:int;
+    let b:int;
+    let c:int;
+    a=5;
+    b=6;
+    c=7;
+    return (a+b)-c;
 }
-
-fn main() -> int {
-    let i: int = 0;
-    let j: int;
-    j = getint();
-    while i < j {
-        putint(i);
-        putchar(32);
-        putint(fib(i));
-        putln();
-        i = i + 1;
-    }
-    return 0;
+fn main()->void{
+    putint(EightWhile());
 }
