@@ -1,12 +1,17 @@
 fn EightWhile()->int{
+//asd as da
+
     let a:int;
     let b:int;
     let c:int;
     a=5;
     b=6;
     c=7;
-    return (a+b)-c;
+    return (a+b)-c; //adaada
+
 }
+///adadsf
+
 fn main()->void{
     putint(EightWhile());
 }

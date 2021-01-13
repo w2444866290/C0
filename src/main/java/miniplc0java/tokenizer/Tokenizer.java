@@ -32,6 +32,30 @@ public class Tokenizer {
         }
 
         char peek = it.peekChar();
+
+        // 处理注释
+        if (peek == '/') {
+            it.nextChar();
+            peek = it.peekChar();
+            if (peek == '/') {
+                do {
+                    it.nextChar();
+                    peek = it.peekChar();
+                }while (peek != '\n');
+                it.nextChar();
+            }
+        }
+
+        // 再次跳过注释与代码之间的空白字符
+
+        skipSpaceCharacters();
+
+        if (it.isEOF()) {
+            return new Token(TokenType.EOF, "", it.currentPos(), it.currentPos());
+        }
+
+        peek = it.peekChar();
+
         if (Character.isDigit(peek)) {
             return lexUInt();
         } else if (peek == '"') {
@@ -252,6 +276,7 @@ public class Tokenizer {
                     tokenbuilder.append(token.getValue().toString());
                 }
                 tokenbuilder.append('/');
+                System.out.println(token.getTokenType().toString() + " " + token.getValue().toString());
             }
             return tokenbuilder.toString();
         } catch (Exception e) {

@@ -1,5 +1,6 @@
 package miniplc0java;
 
+import miniplc0java.analyser.Analyser;
 import miniplc0java.tokenizer.StringIter;
 import miniplc0java.tokenizer.Token;
 import miniplc0java.tokenizer.Tokenizer;
@@ -68,5 +69,35 @@ public class TokenizerTest {
         var outString = RunTokenizer(iter);
 
         assertEquals("COMMA/COLON/SEMICOLON/ARROW/PLUS/MINUS/MUL/DIV/ASSIGN/EQ/NEQ/LT/GT/LE/GE/L_PAREN/R_PAREN/L_BRACE/R_BRACE//", outString);
+    }
+
+    @Test
+    public void TestComment() {
+        Scanner scanner;
+        String input = new String("abc " +
+                "\n" +
+                "//this is a comment!\n");
+        scanner = new Scanner(input);
+        var iter = new StringIter(scanner);
+
+        var outString = RunTokenizer(iter);
+
+        assertEquals("IDENTabc//", outString);
+    }
+
+    @Test
+    public void TestLEX() {
+        Scanner scanner;
+        try {
+            FileInputStream input = new FileInputStream("analysertest.txt");
+            scanner = new Scanner(input);
+            var iter = new StringIter(scanner);
+            var tokenizer = new Tokenizer(iter);
+            tokenizer.Run();
+        }
+        catch (Exception e) {
+            System.err.println(e);
+            System.exit(-1);
+        }
     }
 }
