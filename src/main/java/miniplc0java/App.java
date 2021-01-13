@@ -81,6 +81,9 @@ public class App {
                     if (token.getTokenType().equals(TokenType.EOF)) {
                         break;
                     }
+                    if (token.getTokenType().equals(TokenType.NONE)) {
+                        continue;
+                    }
                     tokens.add(token);
                 }
             } catch (Exception e) {

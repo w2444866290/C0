@@ -2,6 +2,7 @@ package miniplc0java.tokenizer;
 
 import miniplc0java.error.TokenizeError;
 import miniplc0java.error.ErrorCode;
+import org.checkerframework.checker.units.qual.Speed;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,29 +33,6 @@ public class Tokenizer {
         }
 
         char peek = it.peekChar();
-
-        // 处理注释
-        if (peek == '/') {
-            it.nextChar();
-            peek = it.peekChar();
-            if (peek == '/') {
-                do {
-                    it.nextChar();
-                    peek = it.peekChar();
-                }while (peek != '\n');
-                it.nextChar();
-            }
-        }
-
-        // 再次跳过注释与代码之间的空白字符
-
-        skipSpaceCharacters();
-
-        if (it.isEOF()) {
-            return new Token(TokenType.EOF, "", it.currentPos(), it.currentPos());
-        }
-
-        peek = it.peekChar();
 
         if (Character.isDigit(peek)) {
             return lexUInt();
@@ -197,7 +175,15 @@ public class Tokenizer {
                 return new Token(TokenType.MUL, '*', it.previousPos(), it.currentPos());
 
             case '/':
-                return new Token(TokenType.DIV, '/', it.previousPos(), it.currentPos());
+                // 检查是否为注释
+                if (it.peekChar() == '/') {
+                    var peek = it.nextChar();
+                    do {
+                        peek = it.nextChar();
+                    } while (peek != '\n');
+                    return new Token(TokenType.NONE, "", it.previousPos(), it.currentPos());
+                }
+                else return new Token(TokenType.DIV, '/', it.previousPos(), it.currentPos());
 
             case '=':
                 if (it.peekChar() == '=') {
@@ -265,6 +251,8 @@ public class Tokenizer {
         try {
             while (true) {
                 var token = this.nextToken();
+                if (token.getTokenType().equals(TokenType.NONE))
+                    continue;
                 if (token.getTokenType().equals(TokenType.EOF)) {
                     tokenbuilder.append('/');
                     break;
