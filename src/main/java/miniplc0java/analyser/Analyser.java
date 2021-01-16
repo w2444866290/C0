@@ -59,7 +59,7 @@ public final class Analyser {
     private List<Object> generateCode() {
         List<Object> commands = new ArrayList<>();
 
-        commands.add(globCount);
+        commands.add(globCount + 1);
 
         // 全局变量数组
         for (SymbolEntry se:
@@ -410,31 +410,31 @@ public final class Analyser {
 
         var expectedFuncPos = peekedToken.getStartPos();
 
-        // 符号表中插入入口函数
-        addSymbol("_start", "void", -1, globCount++, 0,
-                true, true, true, expectedFuncPos);
-
         // 分析函数定义
         while (peekedToken.getTokenType() == TokenType.FN_KW) {
             analyseFunction();
             peekedToken = peek();
         }
 
+        // 符号表中插入入口函数
+        addSymbol("_start", "void", -1, globCount, globCount,
+                true, true, true, expectedFuncPos);
+
         // 判断有无main函数
         var mainfunc = getFuncSymbolEntry("main");
         if (mainfunc == null)
             throw new AnalyzeError(ErrorCode.NoEntry, expectedFuncPos);
         else {
-            instructions.add(new Instruction(Operation.stackalloc, getStackAlloc(mainfunc.getType()), 0));
-            instructions.add(new Instruction(Operation.call, mainfunc.getFunctionIndex(), 0));
+            instructions.add(new Instruction(Operation.stackalloc, getStackAlloc(mainfunc.getType()), globCount));
+            instructions.add(new Instruction(Operation.call, mainfunc.getFunctionIndex(), globCount));
             var popNum = popN(0);
             if (popNum > 0) {
-                instructions.add(new Instruction(Operation.popn, popNum, 0));
+                instructions.add(new Instruction(Operation.popn, popNum, globCount));
             }
             var bodyCount = 0;
             for (Instruction ins:
                  instructions) {
-                if (ins.getFuncIndex() == 0)
+                if (ins.getFuncIndex() == globCount)
                     bodyCount++;
             }
             getFuncSymbolEntry("_start").setBodyCount(bodyCount);
