@@ -24,6 +24,9 @@ public final class Analyser {
     /** 当前偷看的 token */
     Token peekedToken = null;
 
+    /** 当前OPG分析式的类型 */
+    String curType = null;
+
     /** 符号表 */
     Stack<SymbolEntry> symbolTable = new Stack<>();
 
@@ -534,6 +537,10 @@ public final class Analyser {
         if (initialized) {
             expect(TokenType.ASSIGN);
             analyseOPG();
+            // 检测变量类型是否正确
+            if (!type.equals(curType))
+                throw new AnalyzeError(ErrorCode.InvalidAssignment, peek().getStartPos());
+
             instructions.add(new Instruction(Operation.store64, funcCount));
         }
 
@@ -567,6 +574,10 @@ public final class Analyser {
         }
 
         analyseOPG();
+
+        // 检测变量类型是否正确
+        if (!type.equals(curType))
+            throw new AnalyzeError(ErrorCode.InvalidAssignment, peek().getStartPos());
 
         instructions.add(new Instruction(Operation.store64, funcCount));
 
@@ -779,6 +790,8 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.AssignToConstant, nameToken.getStartPos());
         }
 
+        var type = symbol.getType();
+
         // 设置符号已初始化
         if (symbol.isInitialized == false)
             initializeSymbol(name, nameToken.getStartPos());
@@ -789,6 +802,10 @@ public final class Analyser {
             instructions.add(new Instruction(Operation.loca, symbol.getLocalIndex(), funcCount));
 
         analyseOPG();
+
+        // 检测变量类型是否正确
+        if (!type.equals(curType))
+            throw new AnalyzeError(ErrorCode.InvalidAssignment, peek().getStartPos());
 
         instructions.add(new Instruction(Operation.store64, funcCount));
     }
@@ -813,6 +830,7 @@ public final class Analyser {
             // 调用
             var funcIndex = getFuncSymbolEntry(fn_name).getFunctionIndex();
             instructions.add(new Instruction(Operation.call, funcIndex, funcCount));
+            curType = type;
         }
 
         expect(TokenType.R_PAREN);
@@ -890,6 +908,7 @@ public final class Analyser {
                         continue;
                     }
                 }
+
                 symbolStack.push(curOut);
                 curIn = symbolStack.peek();
                 prevOut = curOut;
@@ -931,9 +950,9 @@ public final class Analyser {
                         // (N) 弹出3个符号，推入一个N
                     case "as":
                         // N as N 弹出3个符号，推入一个N
-                        symbolStack.pop();
+                        var lstOp = symbolStack.pop();
                         var midOp = symbolStack.pop();
-                        symbolStack.pop();
+                        var fstOp = symbolStack.pop(); // 用于as关键字
 
                         // 生成指令
                         switch (midOp.getTokenType()) {
@@ -977,13 +996,32 @@ public final class Analyser {
                                 instructions.add(new Instruction(Operation.cmpi, funcCount));
                                 instructions.add(new Instruction(Operation.brtrue, 1, funcCount));
                             case AS_KW:
-                                var peekedToken = peek();
+                                var entry = fstOp.getValue().toString();
+                                if (!entry.equals("double") && !entry.equals("int"))
+                                    entry = getSymbolType(entry, curIn.getStartPos());
+
+                                if (lstOp.getValue().equals("double")) {
+                                    if (entry.equals("int"))
+                                        instructions.add(new Instruction(Operation.itof, funcCount));
+                                    else if (entry.equals("double"));
+                                }
+                                else if (lstOp.getValue().equals("int")) {
+                                    if (entry.equals("double"))
+                                        instructions.add(new Instruction(Operation.ftoi, funcCount));
+                                    else if (entry.equals("int"));
+                                }
+                                else if (lstOp.getValue().equals("void"))
+                                    throw new AnalyzeError(ErrorCode.InvalidAssignment, curOut.getStartPos());
                             default:
                                 break;
                         }
 
-                        symbolStack.push(new Token(TokenType.NONE, null,
-                                new Pos(0,0), new Pos(0,0)));
+                        curType = lstOp.getValue().toString();
+                        if (!curType.equals("double") && !curType.equals("int")) {
+                            curType = getSymbolType(curType, curIn.getStartPos());
+                        }
+
+                        symbolStack.push(new Token(TokenType.NONE, curType, new Pos(0,0), new Pos(0,0)));
                         break;
                     case "i":
                         // i -> N, 弹出i，推入n
@@ -994,10 +1032,12 @@ public final class Analyser {
                             case UINT:
                                 instructions.add(new Instruction(Operation.push,
                                         (Integer) nameToken.getValue(), funcCount));
+                                curType = "int";
                                 break;
                             case DOUBLE:
                                 instructions.add(new Instruction(Operation.push,
                                         (Long) nameToken.getValue(), funcCount));
+                                curType = "double";
                                 break;
                             case STRING:
                                 var StringVar = getGlobalSymbolEntry((String) nameToken.getValue());
@@ -1008,9 +1048,11 @@ public final class Analyser {
                                     StringVar = getGlobalSymbolEntry((String) nameToken.getValue());
                                 }
                                 instructions.add(new Instruction(Operation.push, StringVar.getGlobalIndex(), funcCount));
+                                curType = "string";
                                 break;
                             case IDENT:
                                 var SE = getSymbolEntryByName((String) nameToken.getValue());
+
                                 if (SE != null && !SE.isFunction()) {
                                     if (SE.isGlobal()) {
                                         // 函数参数
@@ -1029,13 +1071,18 @@ public final class Analyser {
                                                 SE.getLocalIndex(), funcCount));
 
                                     instructions.add(new Instruction(Operation.load64, funcCount));
+                                    curType = SE.getType();
                                 }
                             default:
                                 break;
                         }
 
-                        symbolStack.push(new Token(TokenType.NONE, null,
-                                new Pos(0,0), new Pos(0,0)));
+                        var remValue = curType;
+                        // 如果是关键词，保存关键词名用于查找type
+                        if (nameToken.getTokenType() == TokenType.IDENT)
+                            remValue = nameToken.getValue().toString();
+
+                        symbolStack.push(new Token(TokenType.NONE, remValue, new Pos(0,0), new Pos(0,0)));
                         break;
                     case "n":
                         // -N 弹出2个符号，推入一个N
@@ -1044,8 +1091,7 @@ public final class Analyser {
 
                         instructions.add(new Instruction(Operation.negi, funcCount));
 
-                        symbolStack.push(new Token(TokenType.NONE, null,
-                                new Pos(0,0), new Pos(0,0)));
+                        symbolStack.push(new Token(TokenType.NONE,curType, new Pos(0,0), new Pos(0,0)));
                         break;
                     case "#":
                         // 符号栈中终结符只剩下#，不能规约，退出循环
@@ -1086,6 +1132,7 @@ public final class Analyser {
                 }
                 instructions.add(new Instruction(Operation.stackalloc, 1, funcCount));
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
+                curType = "int";
                 return new SymbolEntry("getint", "int", -1, globCount,
                         funcCount+stdCount, true, true, true,
                         getOffset("getint", fn_nameToken.getStartPos()));
@@ -1102,6 +1149,7 @@ public final class Analyser {
                 }
                 instructions.add(new Instruction(Operation.stackalloc, 1, funcCount));
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
+                curType = "double";
                 return new SymbolEntry("getdouble", "double", -1, globCount,
                         funcCount+stdCount, true, true, true,
                         getOffset("getdouble", fn_nameToken.getStartPos()));
@@ -1118,6 +1166,7 @@ public final class Analyser {
                 }
                 instructions.add(new Instruction(Operation.stackalloc, 1, funcCount));
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
+                curType = "int";
                 return new SymbolEntry("getchar", "int", -1, -1,
                         funcCount+stdCount, true, true, true,
                         getOffset("getchar", fn_nameToken.getStartPos()));
@@ -1135,6 +1184,7 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.stackalloc, 0, funcCount));
                 analyseCallParamList();
                 instructions.add(new Instruction(Operation.callname, isDeclared.getGlobalIndex(), funcCount));
+                curType = "void";
                 return new SymbolEntry("putint", "void", -1, globCount,
                         funcCount+stdCount, true, true, true,
                         getOffset("putint", fn_nameToken.getStartPos()));
@@ -1152,6 +1202,7 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.stackalloc, 0, funcCount));
                 analyseCallParamList();
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
+                curType = "void";
                 return new SymbolEntry("putdouble", "void", -1, globCount,
                         funcCount+stdCount, true, true, true,
                         getOffset("putdouble", fn_nameToken.getStartPos()));
@@ -1169,6 +1220,7 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.stackalloc, 0, funcCount));
                 analyseCallParamList();
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
+                curType = "void";
                 return new SymbolEntry("putchar", "void", -1, globCount,
                         funcCount+stdCount, true, true, true,
                         getOffset("putchar", fn_nameToken.getStartPos()));
@@ -1186,6 +1238,7 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.stackalloc, 0, funcCount));
                 analyseCallParamList();
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
+                curType = "void";
                 return new SymbolEntry("putstr", "void", -1, globCount,
                         funcCount+stdCount, true, true, true,
                         getOffset("putstr", fn_nameToken.getStartPos()));
@@ -1202,6 +1255,7 @@ public final class Analyser {
                 }
                 instructions.add(new Instruction(Operation.stackalloc, 0, funcCount));
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
+                curType = "void";
                 return new SymbolEntry("putln", "void", -1, globCount,
                         funcCount+stdCount, true, true, true,
                         getOffset("putln", fn_nameToken.getStartPos()));
