@@ -77,22 +77,28 @@ public final class Analyser {
         // 全局变量表与函数表 分隔符
         commands.add("#");
 
-        commands.add(funcCount + 1);
+        commands.add(funcCount);
         // 函数数组
-        for (SymbolEntry se:
-                symbolTable) {
-            if (se.isFunction() && !isStd(se.getName())) {
-
-                commands.add(se.getGlobalIndex());
-                commands.add(se.getType() == "void" ? 0 : 1);
-                commands.add(se.getParamSlots());
-                commands.add(se.getLocSlots());
-                commands.add(se.getBodyCount());
-                for (Instruction cm:
-                        instructions) {
-                    if (cm.getFuncIndex() == se.getFunctionIndex())
-                        commands.add(cm);
+        for (int i = 0; i < funcCount; i++) {
+            SymbolEntry SE = null;
+            for (SymbolEntry se:
+                    symbolTable) {
+                if (se.isFunction() && !isStd(se.getName())) {
+                    if (se.getFunctionIndex() == i) {
+                        SE = se;
+                        break;
+                    }
                 }
+            }
+            commands.add(SE.getGlobalIndex());
+            commands.add(SE.getType() == "void" ? 0 : 1);
+            commands.add(SE.getParamSlots());
+            commands.add(SE.getLocSlots());
+            commands.add(SE.getBodyCount());
+            for (Instruction cm:
+                    instructions) {
+                if (cm.getFuncIndex() == SE.getFunctionIndex())
+                    commands.add(cm);
             }
         }
 
