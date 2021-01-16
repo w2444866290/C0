@@ -37,7 +37,7 @@ public final class Analyser {
     int globCount = 0;
 
     /** 函数个数 */
-    int funcCount = 0;
+    int funcCount = 1;
 
     /** 标准库函数个数 */
     int stdCount = 0;
@@ -417,7 +417,7 @@ public final class Analyser {
         }
 
         // 符号表中插入入口函数
-        addSymbol("_start", "void", -1, globCount, globCount,
+        addSymbol("_start", "void", -1, globCount, 0,
                 true, true, true, expectedFuncPos);
 
         // 判断有无main函数
@@ -425,16 +425,16 @@ public final class Analyser {
         if (mainfunc == null)
             throw new AnalyzeError(ErrorCode.NoEntry, expectedFuncPos);
         else {
-            instructions.add(new Instruction(Operation.stackalloc, getStackAlloc(mainfunc.getType()), globCount));
-            instructions.add(new Instruction(Operation.call, mainfunc.getFunctionIndex(), globCount));
+            instructions.add(new Instruction(Operation.stackalloc, getStackAlloc(mainfunc.getType()), 0));
+            instructions.add(new Instruction(Operation.call, mainfunc.getFunctionIndex(), 0));
             var popNum = popN(0);
             if (popNum > 0) {
-                instructions.add(new Instruction(Operation.popn, popNum, globCount));
+                instructions.add(new Instruction(Operation.popn, popNum, 0));
             }
             var bodyCount = 0;
             for (Instruction ins:
                  instructions) {
-                if (ins.getFuncIndex() == globCount)
+                if (ins.getFuncIndex() == 0)
                     bodyCount++;
             }
             getFuncSymbolEntry("_start").setBodyCount(bodyCount);
