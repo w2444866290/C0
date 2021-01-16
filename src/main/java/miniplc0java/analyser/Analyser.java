@@ -1016,11 +1016,6 @@ public final class Analyser {
                                 break;
                         }
 
-                        curType = lstOp.getValue().toString();
-                        if (!curType.equals("double") && !curType.equals("int")) {
-                            curType = getSymbolType(curType, curIn.getStartPos());
-                        }
-
                         symbolStack.push(new Token(TokenType.NONE, curType, new Pos(0,0), new Pos(0,0)));
                         break;
                     case "i":
