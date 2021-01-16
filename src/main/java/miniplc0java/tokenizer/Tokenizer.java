@@ -40,7 +40,9 @@ public class Tokenizer {
             return lexNumber();
         } else if (peek == '"') {
             return lexStringLiteral();
-        }  else if (Character.isLetter(peek) || peek == '_') {
+        } else if (peek == '\'') {
+            return lexCharLiteral();
+        } else if (Character.isLetter(peek) || peek == '_') {
             return lexIdentOrKeyword();
         } else {
             return lexOperatorOrUnknown();
@@ -140,7 +142,6 @@ public class Tokenizer {
             // end
             if (peek == '"') {
                 it.nextChar();
-                peek = it.peekChar();
                 break;
             }
             if (it.isEOF())
@@ -172,6 +173,44 @@ public class Tokenizer {
 
         // 返回字符串类型的token
         return new Token(TokenType.STRING, buf.toString(), it.previousPos(), it.currentPos());
+    }
+
+    private Token lexCharLiteral() throws TokenizeError {
+        Character ch = null;
+        it.nextChar();
+        char peek = it.peekChar();
+
+        if (it.isEOF())
+            throw new TokenizeError(ErrorCode.InvalidInput, it.currentPos());
+
+        // escape_sequence
+        if (peek == '\\') {
+            it.nextChar();
+            peek = it.peekChar();
+            switch (peek) {
+                case '\\': ch = '\\';break;
+                case '"': ch = '"';break;
+                case '\'': ch = '\'';break;
+                case 'n': ch = '\n';break;
+                case 't': ch = '\t';break;
+                case 'r': ch = '\r';break;
+                default:
+                    ch = '\\';
+            }
+            it.nextChar();
+            peek = it.peekChar();
+        }
+        // char_regular_char
+        else {
+            ch = it.nextChar();
+            peek = it.peekChar();
+        }
+
+        // end
+        if (peek == '\'') it.nextChar();
+
+        // 返回字符串类型的token
+        return new Token(TokenType.CHAR, (int) ch, it.previousPos(), it.currentPos());
     }
 
     private Token lexIdentOrKeyword() throws TokenizeError {
@@ -327,7 +366,8 @@ public class Tokenizer {
                 tokens.add(token);
                 tokenbuilder.append(token.getTokenType().toString());
                 if (token.getTokenType() == TokenType.IDENT || token.getTokenType() == TokenType.UINT ||
-                        token.getTokenType() == TokenType.DOUBLE || token.getTokenType() == TokenType.STRING) {
+                        token.getTokenType() == TokenType.DOUBLE || token.getTokenType() == TokenType.STRING ||
+                        token.getTokenType() == TokenType.CHAR) {
                     tokenbuilder.append(token.getValue().toString());
                 }
                 tokenbuilder.append('/');

@@ -3,6 +3,7 @@ package miniplc0java.tokenizer;
 public enum TokenType {
     UINT,
     DOUBLE,
+    CHAR,
     STRING,
     IDENT,
     FN_KW,
@@ -48,6 +49,8 @@ public enum TokenType {
                 return "DOUBLE";
             case STRING:
                 return "STRING";
+            case CHAR:
+                return "CHAR";
             case IDENT:
                 return "IDENT";
             case FN_KW:

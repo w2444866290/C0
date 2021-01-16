@@ -113,8 +113,9 @@ public class OPG {
     public static String getSymbol(TokenType tt) {
         switch (tt) {
             case UINT:
-            case STRING:
             case DOUBLE:
+            case STRING:
+            case CHAR:
             case IDENT:
                 return "i";
             case AS_KW:

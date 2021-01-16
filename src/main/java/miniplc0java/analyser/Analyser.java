@@ -1045,6 +1045,10 @@ public final class Analyser {
                                 instructions.add(new Instruction(Operation.push, StringVar.getGlobalIndex(), funcCount));
                                 curType = "string";
                                 break;
+                            case CHAR:
+                                instructions.add(new Instruction(Operation.push, nameToken.getValue(), funcCount));
+                                curType = "char";
+                                break;
                             case IDENT:
                                 var SE = getSymbolEntryByName((String) nameToken.getValue());
 

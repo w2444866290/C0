@@ -64,6 +64,19 @@ public class TokenizerTest {
     }
 
     @Test
+    public void TestlexCharLiteral() {
+        Scanner scanner;
+        String input = new String("\'t\'  \'\n\'  \'\'\'");
+        System.out.println(input);
+        scanner = new Scanner(input);
+        var iter = new StringIter(scanner);
+
+        var outString = RunTokenizer(iter);
+
+        assertEquals("CHAR116/CHAR10/CHAR39//", outString);
+    }
+
+    @Test
     public void TestlexIdentOrKeyword() {
         Scanner scanner;
         String input = new String("\t\nfn let const as while if else return break continue _abc ident");
