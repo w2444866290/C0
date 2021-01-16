@@ -45,6 +45,9 @@ public final class Analyser {
     /** 局部变量数 */
     int localCount = 0;
 
+    /** 分析器目前所处的状态 */
+    Boolean isGlobal = false;
+
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
         this.instructions = new ArrayList<>();
@@ -408,11 +411,13 @@ public final class Analyser {
         var peekedToken = peek();
 
         // 分析全局变量
+        isGlobal = true;
         while (peekedToken.getTokenType() == TokenType.CONST_KW ||
                 peekedToken.getTokenType() == TokenType.LET_KW) {
-            analyseDeclareStatement(true);
+            analyseDeclareStatement();
             peekedToken = peek();
         }
+        isGlobal = false;
 
         var expectedFuncPos = peekedToken.getStartPos();
 
@@ -469,7 +474,7 @@ public final class Analyser {
 
         if (peekedToken.getTokenType() == TokenType.LET_KW ||
                 peekedToken.getTokenType() == TokenType.CONST_KW) {
-            analyseDeclareStatement(false);
+            analyseDeclareStatement();
         }
         else if (peekedToken.getTokenType() == TokenType.IF_KW) {
             var isRet = analyseIfStatement(funcNeedRet);
@@ -502,16 +507,16 @@ public final class Analyser {
         expect(TokenType.SEMICOLON);
     }
 
-    private void analyseDeclareStatement(Boolean isGlobal) throws CompileError {
+    private void analyseDeclareStatement() throws CompileError {
         if(check(TokenType.LET_KW))
-            analyseLetDeclareStatement(isGlobal);
+            analyseLetDeclareStatement();
         else if (check(TokenType.CONST_KW))
-            analyseConstDeclareStatement(isGlobal);
+            analyseConstDeclareStatement();
         else
             throw new AnalyzeError(ErrorCode.InvalidIdentifier, peek().getStartPos());
     }
 
-    private void analyseLetDeclareStatement(Boolean isGlobal) throws CompileError {
+    private void analyseLetDeclareStatement() throws CompileError {
         expect(TokenType.LET_KW);
 
         var nameToken = expect(TokenType.IDENT);
@@ -526,11 +531,11 @@ public final class Analyser {
 
         String name = (String) nameToken.getValue();
         if (isGlobal) {
-            addSymbol(name, type, -1, globCount++, funcCount,
+            addSymbol(name, type, -1, globCount++, 0,
                     false, initialized, false, nameToken.getStartPos());
             if (initialized)
                 instructions.add(new Instruction(Operation.globa,
-                        getGlobalSymbolEntry(name).getGlobalIndex(), funcCount));
+                        getGlobalSymbolEntry(name).getGlobalIndex(), 0));
         }
         else {
             addSymbol(name, type, localCount, -1, funcCount,
@@ -546,14 +551,16 @@ public final class Analyser {
             // 检测变量类型是否正确
             if (!type.equals(curType))
                 throw new AnalyzeError(ErrorCode.InvalidAssignment, peek().getStartPos());
-
-            instructions.add(new Instruction(Operation.store64, funcCount));
+            if (isGlobal)
+                instructions.add(new Instruction(Operation.store64, 0));
+            else
+                instructions.add(new Instruction(Operation.store64, funcCount));
         }
 
         expect(TokenType.SEMICOLON);
     }
 
-    private void analyseConstDeclareStatement(Boolean isGlobal) throws CompileError {
+    private void analyseConstDeclareStatement() throws CompileError {
         expect(TokenType.CONST_KW);
 
         var nameToken = expect(TokenType.IDENT);
@@ -568,9 +575,9 @@ public final class Analyser {
 
         String name = (String) nameToken.getValue();
         if (isGlobal) {
-            addSymbol(name, type, -1, globCount++, funcCount,
+            addSymbol(name, type, -1, globCount++, 0,
                     false, true, true, nameToken.getStartPos());
-            instructions.add(new Instruction(Operation.globa, getGlobalSymbolEntry(name).getGlobalIndex(), funcCount));
+            instructions.add(new Instruction(Operation.globa, getGlobalSymbolEntry(name).getGlobalIndex(), 0));
         }
         else {
             addSymbol(name, type, localCount, -1, funcCount,
@@ -585,7 +592,10 @@ public final class Analyser {
         if (!type.equals(curType))
             throw new AnalyzeError(ErrorCode.InvalidAssignment, peek().getStartPos());
 
-        instructions.add(new Instruction(Operation.store64, funcCount));
+        if (isGlobal)
+            instructions.add(new Instruction(Operation.store64, 0));
+        else
+            instructions.add(new Instruction(Operation.store64, funcCount));
 
         expect(TokenType.SEMICOLON);
     }
@@ -937,6 +947,7 @@ public final class Analyser {
             }
             // in>out 规约
             else if (OPG.compare(curIn, curOut) == 3){
+                var funcPos = isGlobal? 0: funcCount;
                 switch (OPG.getSymbol(curIn.getTokenType())) {
                     case "+":
                     case "-":
@@ -961,44 +972,44 @@ public final class Analyser {
                         // 生成指令
                         switch (midOp.getTokenType()) {
                             case PLUS:
-                                instructions.add(new Instruction(Operation.addi, funcCount));
+                                instructions.add(new Instruction(Operation.addi, funcPos));
                                 break;
                             case MINUS:
-                                instructions.add(new Instruction(Operation.subi, funcCount));
+                                instructions.add(new Instruction(Operation.subi, funcPos));
                                 break;
                             case MUL:
-                                instructions.add(new Instruction(Operation.muli, funcCount));
+                                instructions.add(new Instruction(Operation.muli, funcPos));
                                 break;
                             case DIV:
-                                instructions.add(new Instruction(Operation.divi, funcCount));
+                                instructions.add(new Instruction(Operation.divi, funcPos));
                                 break;
                             case GT:
-                                instructions.add(new Instruction(Operation.cmpi, funcCount));
-                                instructions.add(new Instruction(Operation.setgt, funcCount));
-                                instructions.add(new Instruction(Operation.brtrue, 1, funcCount));
+                                instructions.add(new Instruction(Operation.cmpi, funcPos));
+                                instructions.add(new Instruction(Operation.setgt, funcPos));
+                                instructions.add(new Instruction(Operation.brtrue, 1, funcPos));
                                 break;
                             case LT:
-                                instructions.add(new Instruction(Operation.cmpi, funcCount));
-                                instructions.add(new Instruction(Operation.setlt, funcCount));
-                                instructions.add(new Instruction(Operation.brtrue, 1, funcCount));
+                                instructions.add(new Instruction(Operation.cmpi, funcPos));
+                                instructions.add(new Instruction(Operation.setlt, funcPos));
+                                instructions.add(new Instruction(Operation.brtrue, 1, funcPos));
                                 break;
                             case GE:
-                                instructions.add(new Instruction(Operation.cmpi, funcCount));
-                                instructions.add(new Instruction(Operation.setlt, funcCount));
-                                instructions.add(new Instruction(Operation.brfalse, 1, funcCount));
+                                instructions.add(new Instruction(Operation.cmpi, funcPos));
+                                instructions.add(new Instruction(Operation.setlt, funcPos));
+                                instructions.add(new Instruction(Operation.brfalse, 1, funcPos));
                                 break;
                             case LE:
-                                instructions.add(new Instruction(Operation.cmpi, funcCount));
-                                instructions.add(new Instruction(Operation.setgt, funcCount));
-                                instructions.add(new Instruction(Operation.brfalse, 1, funcCount));
+                                instructions.add(new Instruction(Operation.cmpi, funcPos));
+                                instructions.add(new Instruction(Operation.setgt, funcPos));
+                                instructions.add(new Instruction(Operation.brfalse, 1, funcPos));
                                 break;
                             case EQ:
-                                instructions.add(new Instruction(Operation.cmpi, funcCount));
-                                instructions.add(new Instruction(Operation.brfalse, 1, funcCount));
+                                instructions.add(new Instruction(Operation.cmpi, funcPos));
+                                instructions.add(new Instruction(Operation.brfalse, 1, funcPos));
                                 break;
                             case NEQ:
-                                instructions.add(new Instruction(Operation.cmpi, funcCount));
-                                instructions.add(new Instruction(Operation.brtrue, 1, funcCount));
+                                instructions.add(new Instruction(Operation.cmpi, funcPos));
+                                instructions.add(new Instruction(Operation.brtrue, 1, funcPos));
                             case AS_KW:
                                 var entry = fstOp.getValue().toString();
                                 if (!entry.equals("double") && !entry.equals("int"))
@@ -1006,12 +1017,12 @@ public final class Analyser {
 
                                 if (lstOp.getValue().equals("double")) {
                                     if (entry.equals("int"))
-                                        instructions.add(new Instruction(Operation.itof, funcCount));
+                                        instructions.add(new Instruction(Operation.itof, funcPos));
                                     else if (entry.equals("double"));
                                 }
                                 else if (lstOp.getValue().equals("int")) {
                                     if (entry.equals("double"))
-                                        instructions.add(new Instruction(Operation.ftoi, funcCount));
+                                        instructions.add(new Instruction(Operation.ftoi, funcPos));
                                     else if (entry.equals("int"));
                                 }
                                 else if (lstOp.getValue().equals("void"))
@@ -1030,12 +1041,12 @@ public final class Analyser {
                         switch (nameToken.getTokenType()) {
                             case UINT:
                                 instructions.add(new Instruction(Operation.push,
-                                        (Integer) nameToken.getValue(), funcCount));
+                                        (Integer) nameToken.getValue(), funcPos));
                                 curType = "int";
                                 break;
                             case DOUBLE:
                                 instructions.add(new Instruction(Operation.push,
-                                        (Long) nameToken.getValue(), funcCount));
+                                        (Long) nameToken.getValue(), funcPos));
                                 curType = "double";
                                 break;
                             case STRING:
@@ -1046,11 +1057,11 @@ public final class Analyser {
                                             true, true, nameToken.getStartPos());
                                     StringVar = getGlobalSymbolEntry((String) nameToken.getValue());
                                 }
-                                instructions.add(new Instruction(Operation.push, StringVar.getGlobalIndex(), funcCount));
+                                instructions.add(new Instruction(Operation.push, StringVar.getGlobalIndex(), funcPos));
                                 curType = "string";
                                 break;
                             case CHAR:
-                                instructions.add(new Instruction(Operation.push, nameToken.getValue(), funcCount));
+                                instructions.add(new Instruction(Operation.push, nameToken.getValue(), funcPos));
                                 curType = "char";
                                 break;
                             case IDENT:
@@ -1061,19 +1072,19 @@ public final class Analyser {
                                         // 函数参数
                                         if (SE.isLocal()) {
                                             instructions.add(new Instruction(Operation.arga,
-                                                    SE.getGlobalIndex(), funcCount));
+                                                    SE.getGlobalIndex(), funcPos));
                                         }
                                         // 全局变量
                                         else {
                                             instructions.add(new Instruction(Operation.globa,
-                                                    SE.getGlobalIndex(), funcCount));
+                                                    SE.getGlobalIndex(), funcPos));
                                         }
                                     }
                                     else
                                         instructions.add(new Instruction(Operation.loca,
-                                                SE.getLocalIndex(), funcCount));
+                                                SE.getLocalIndex(), funcPos));
 
-                                    instructions.add(new Instruction(Operation.load64, funcCount));
+                                    instructions.add(new Instruction(Operation.load64, funcPos));
                                     curType = SE.getType();
                                 }
                             default:
@@ -1092,7 +1103,7 @@ public final class Analyser {
                         symbolStack.pop();
                         symbolStack.pop();
 
-                        instructions.add(new Instruction(Operation.negi, funcCount));
+                        instructions.add(new Instruction(Operation.negi, funcPos));
 
                         symbolStack.push(new Token(TokenType.NONE,curType, new Pos(0,0), new Pos(0,0)));
                         break;
