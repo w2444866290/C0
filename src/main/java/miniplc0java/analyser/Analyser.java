@@ -687,9 +687,6 @@ public final class Analyser {
     }
 
     private void analyseFunction() throws CompileError {
-        // 识别到函数， funcCount + 1
-        funcCount ++;
-
         expect(TokenType.FN_KW);
 
         var nameToken = expect(TokenType.IDENT);
@@ -740,6 +737,7 @@ public final class Analyser {
         else _this.setBodyCount(end - begin);
         deleteSymbolByRet();
         localCount = 0;
+        funcCount++;
     }
 
     private void analyseFunctionParamList() throws CompileError {
