@@ -20,6 +20,7 @@ public final class Analyser {
 
     Tokenizer tokenizer;
     ArrayList<Instruction> instructions;
+    ArrayList<BBlock> code;
 
     /** 当前偷看的 token */
     Token peekedToken = null;
@@ -44,6 +45,9 @@ public final class Analyser {
 
     /** 局部变量数 */
     int localCount = 0;
+
+    /** 基本块的个数 */
+    int bblockCount = 0;
 
     /** 分析器目前所处的状态 */
     Boolean isGlobal = false;
@@ -402,6 +406,23 @@ public final class Analyser {
     }
 
     /**
+     * 按编号获取基本快
+     *
+     * @param No   编号
+     * @return
+     */
+    private BBlock getBBlock(int No) {
+        for (BBlock bb:
+            code) {
+            if (bb.getNo() == No){
+                return bb;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * 主程序入口
      *
      * @throws CompileError
@@ -477,11 +498,17 @@ public final class Analyser {
             analyseDeclareStatement();
         }
         else if (peekedToken.getTokenType() == TokenType.IF_KW) {
-            var isRet = analyseIfStatement(funcNeedRet);
+            var isRet = analyseIfStatement(funcNeedRet,bblockCount);
+
+            code.add(new BBlock(++bblockCount));
+
             return isRet;
         }
         else if (peekedToken.getTokenType() == TokenType.WHILE_KW) {
-            var isRet = analyseWhileStatement(funcNeedRet);
+            var isRet = analyseWhileStatement(funcNeedRet, bblockCount);
+
+            code.add(new BBlock(++bblockCount));
+
             return isRet;
         }
         else if (peekedToken.getTokenType() == TokenType.RETURN_KW) {
@@ -600,16 +627,29 @@ public final class Analyser {
         expect(TokenType.SEMICOLON);
     }
 
-    private Boolean analyseIfStatement(Boolean funNeedRet) throws CompileError {
+    private Boolean analyseIfStatement(Boolean funNeedRet, int BBNo) throws CompileError {
         expect(TokenType.IF_KW);
 
         analyseOPG();
+
+        instructions.add(new Instruction(Operation.brtrue, 1, funcCount));
 
         var begin = instructions.size();
 
         instructions.add(new Instruction(Operation.br, 0, funcCount));
 
+        // 跳转语句的下一句划分基本快
+        code.add(new BBlock(++bblockCount));
+
+        BBlock BBif = null, BBelse = null;
+
+        // 入口跳转
+        var BBprev = getBBlock(BBNo);
+        BBprev.setGoto(bblockCount);
+
         var isRet = analyseBlockStatement(funNeedRet);
+
+        BBif = getBBlock(bblockCount);
 
         var end = instructions.size();
         var ifLength = end - begin;
@@ -625,10 +665,19 @@ public final class Analyser {
             if(!isRet)
                 instructions.add(new Instruction(Operation.br, 0, funcCount));
 
-            if (check(TokenType.L_BRACE))
+            if (check(TokenType.L_BRACE)) {
+                // 跳转到的语句划分基本快
+                code.add(new BBlock(++bblockCount));
+
+                // 设置跳转
+                BBprev.setGoto(bblockCount);
+
                 analyseBlockStatement(funNeedRet);
+
+                BBelse = getBBlock(bblockCount);
+            }
             else if(check(TokenType.IF_KW)) {
-                analyseIfStatement(funNeedRet);
+                analyseIfStatement(funNeedRet, BBNo);
             }
 
             if(!isRet) {
@@ -643,10 +692,15 @@ public final class Analyser {
         if (!isRet)
             instructions.add(new Instruction(Operation.br, 0, funcCount));
 
+        // 出口跳转
+        BBif.setGoto(bblockCount+1);
+        if (BBelse != null)
+            BBelse.setGoto(bblockCount+1);
+
         return isRet;
     }
 
-    private Boolean analyseWhileStatement(Boolean funNeedRet) throws CompileError {
+    private Boolean analyseWhileStatement(Boolean funNeedRet, int BBNo) throws CompileError {
         expect(TokenType.WHILE_KW);
 
         instructions.add(new Instruction(Operation.br, 0, funcCount));
@@ -655,11 +709,24 @@ public final class Analyser {
 
         analyseOPG();
 
+        instructions.add(new Instruction(Operation.brtrue, 1, funcCount));
+
         var afterJudge = instructions.size();
 
         instructions.add(new Instruction(Operation.br, 0, funcCount));
 
+        // 跳转语句的下一句划分基本快
+        code.add(new BBlock(++bblockCount));
+
+        // 入口跳转
+        var BBprev = getBBlock(BBNo);
+        BBprev.setGoto(bblockCount);
+        var BBwhile = getBBlock(bblockCount);
+
         var isRet = analyseBlockStatement(funNeedRet);
+
+        BBprev.setGoto(bblockCount+1);
+        BBwhile.setGoto(bblockCount+1);
 
         var end = instructions.size();
         var loopLength = end - afterJudge;
@@ -674,6 +741,8 @@ public final class Analyser {
     }
 
     private void analyseReturnStatement(Boolean funcNeedRet) throws CompileError {
+        getBBlock(bblockCount).setRet(true);
+
         expect(TokenType.RETURN_KW);
 
         if (funcNeedRet)
@@ -703,6 +772,8 @@ public final class Analyser {
     }
 
     private void analyseFunction() throws CompileError {
+        code = new ArrayList<>();
+
         expect(TokenType.FN_KW);
 
         var nameToken = expect(TokenType.IDENT);
@@ -731,11 +802,18 @@ public final class Analyser {
         // 记录函数体指令长度
         var begin = instructions.size();
 
-        var isRet = analyseBlockStatement(needRet);
+        // 入口语句划分基本快
+        code.add(new BBlock(++bblockCount));
+
+        analyseBlockStatement(needRet);
+
+        // 判断分支是否返回
+        var isRet = funcIsRet(1);
 
         var end = instructions.size();
 
         _this.setLocSlots(localCount);
+
 
         // 函数返回，localCount 归零
         if (!isRet) {
@@ -754,6 +832,17 @@ public final class Analyser {
         deleteSymbolByRet();
         localCount = 0;
         funcCount++;
+
+        for (BBlock bb:
+             code) {
+            System.out.println(">" + bb.getNo());
+            var Goto = bb.getGoto();
+            for (int i:
+                 Goto) {
+                System.out.print(i+ " ");
+            }
+            System.out.println();
+        }
     }
 
     private void analyseFunctionParamList() throws CompileError {
@@ -986,30 +1075,28 @@ public final class Analyser {
                             case GT:
                                 instructions.add(new Instruction(Operation.cmpi, funcPos));
                                 instructions.add(new Instruction(Operation.setgt, funcPos));
-                                instructions.add(new Instruction(Operation.brtrue, 1, funcPos));
                                 break;
                             case LT:
                                 instructions.add(new Instruction(Operation.cmpi, funcPos));
                                 instructions.add(new Instruction(Operation.setlt, funcPos));
-                                instructions.add(new Instruction(Operation.brtrue, 1, funcPos));
                                 break;
                             case GE:
                                 instructions.add(new Instruction(Operation.cmpi, funcPos));
                                 instructions.add(new Instruction(Operation.setlt, funcPos));
-                                instructions.add(new Instruction(Operation.brfalse, 1, funcPos));
+                                instructions.add(new Instruction(Operation.not, funcPos));
                                 break;
                             case LE:
                                 instructions.add(new Instruction(Operation.cmpi, funcPos));
                                 instructions.add(new Instruction(Operation.setgt, funcPos));
-                                instructions.add(new Instruction(Operation.brfalse, 1, funcPos));
+                                instructions.add(new Instruction(Operation.not, funcPos));
                                 break;
                             case EQ:
                                 instructions.add(new Instruction(Operation.cmpi, funcPos));
-                                instructions.add(new Instruction(Operation.brfalse, 1, funcPos));
+                                instructions.add(new Instruction(Operation.not, funcPos));
                                 break;
                             case NEQ:
                                 instructions.add(new Instruction(Operation.cmpi, funcPos));
-                                instructions.add(new Instruction(Operation.brtrue, 1, funcPos));
+                                break;
                             case AS_KW:
                                 var entry = fstOp.getValue().toString();
                                 if (!entry.equals("double") && !entry.equals("int"))
@@ -1292,6 +1379,27 @@ public final class Analyser {
             default:
                 return false;
         }
+    }
+
+    private Boolean funcIsRet(int No) throws CompileError {
+        var BB = getBBlock(No);
+        var Goto = BB.getGoto();
+
+        if (BB.isRet())
+            return true;
+        else if (!BB.isRet() && Goto.size() == 0)
+            return false;
+
+        var isRet = false;
+        for (int i:
+                Goto) {
+            isRet = funcIsRet(i);
+            BB.setRet(isRet);
+            if(!isRet)
+                return false;
+        }
+
+        return isRet;
     }
 
     private int getStackAlloc(String type) {
