@@ -320,7 +320,7 @@ public final class Analyser {
                            boolean isConstant, Pos curPos) throws AnalyzeError {
         var se = getSymbolEntryByName(name);
         // 全局变量可以覆盖
-        if (se != null && !se.isGlobal()) {
+        if (se != null && !se.isGlobal() && se.getBlockIndex() == blockCount) {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
         } else {
             this.symbolTable.push(new SymbolEntry(name, type, localIndex, GlobalIndex, FunctionIndex,
