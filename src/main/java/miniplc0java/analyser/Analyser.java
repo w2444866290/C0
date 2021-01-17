@@ -51,6 +51,9 @@ public final class Analyser {
 
     /** 分析器目前所处的状态 */
     Boolean isGlobal = false;
+    Boolean isLoop = false;
+    int ContinuePos = 0;
+    int BreakPos = 0;
 
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
@@ -505,9 +508,16 @@ public final class Analyser {
             return isRet;
         }
         else if (peekedToken.getTokenType() == TokenType.WHILE_KW) {
+            isLoop = true;
             var isRet = analyseWhileStatement(funcNeedRet, bblockCount);
+            isLoop = false;
 
             code.add(new BBlock(++bblockCount));
+
+            if (BreakPos != 0) {
+                var breakLength = instructions.size() - BreakPos;
+                instructions.get(BreakPos).setX(breakLength);
+            }
 
             return isRet;
         }
@@ -520,6 +530,19 @@ public final class Analyser {
         }
         else if (peekedToken.getTokenType() == TokenType.SEMICOLON){
             expect(TokenType.SEMICOLON);
+        }
+        else if (isLoop && peekedToken.getTokenType() == TokenType.BREAK_KW) {
+            expect(TokenType.BREAK_KW);
+            expect(TokenType.SEMICOLON);
+
+            instructions.add(new Instruction(Operation.br, 0, funcCount));
+            BreakPos = instructions.size();
+        }
+        else if (isLoop && peekedToken.getTokenType() == TokenType.CONTINUE_KW) {
+            expect(TokenType.CONTINUE_KW);
+            expect(TokenType.SEMICOLON);
+
+            instructions.add(new Instruction(Operation.br, ContinuePos, funcCount));
         }
         else {
             analyseExpressionStatement();

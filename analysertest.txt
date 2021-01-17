@@ -1,6 +1,5 @@
-fn main()->int{
-    while {
-    return;
+fn main()->void{
+    while 0 {
+        continue;
     }
-
 }
