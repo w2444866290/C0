@@ -956,8 +956,13 @@ public final class Analyser {
         if (symbol.isInitialized == false)
             initializeSymbol(name, nameToken.getStartPos());
 
-        if (symbol.isGlobal())
+        // 全局变量
+        if (symbol.isGlobal() && !symbol.isLocal())
             instructions.add(new Instruction(Operation.globa, symbol.getGlobalIndex(), funcCount));
+        // 函数参数
+        else if (symbol.isLocal() && symbol.isGlobal())
+            instructions.add(new Instruction(Operation.arga, symbol.getGlobalIndex(), funcCount));
+        // 局部变量
         else
             instructions.add(new Instruction(Operation.loca, symbol.getLocalIndex(), funcCount));
 
