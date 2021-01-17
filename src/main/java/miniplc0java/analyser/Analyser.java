@@ -335,11 +335,11 @@ public final class Analyser {
     private void deleteSymbolByRet() {
         for (int i = 0; i < symbolTable.size(); i++) {
             var se = symbolTable.get(i);
-            if (se.getFunctionIndex() == funcCount && !se.isFunction() && !se.isGlobal()){
-                if (symbolTable.peek().equals(se))
-                    symbolTable.pop();
-                else
-                    symbolTable.remove(se);
+            if (se.getFunctionIndex() == funcCount && !se.isFunction() &&
+                    (!se.isGlobal() || (se.isLocal() && se.isGlobal()))) // 需要删除参数
+            {
+                symbolTable.remove(se);
+                i--;
             }
         }
     }
