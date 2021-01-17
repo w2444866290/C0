@@ -6,6 +6,7 @@ public class SymbolEntry {
     Integer localIndex;
     Integer globalIndex;
     Integer functionIndex;
+    Integer blockIndex;
     int paramSlots;
     int locSlots;
     int bodyCount;
@@ -19,13 +20,15 @@ public class SymbolEntry {
      * @param isInitialized
      * @param stackOffset
      */
-    public SymbolEntry(String name, String type, Integer localIndex, Integer globalIndex, Integer functionIndex,
-                       boolean isFuncIdent, boolean isConstant, boolean isInitialized, int stackOffset) {
+    public SymbolEntry(String name, String type, Integer localIndex, Integer globalIndex,
+                       Integer functionIndex, Integer blockIndex, boolean isFuncIdent,
+                       boolean isConstant, boolean isInitialized, int stackOffset) {
         this.name = name;
         this.type = type;
         this.localIndex = localIndex;
         this.globalIndex = globalIndex;
         this.functionIndex = functionIndex;
+        this.blockIndex = blockIndex;
         this.isFuncIdent = isFuncIdent;
         this.isConstant = isConstant;
         this.isInitialized = isInitialized;
@@ -65,6 +68,13 @@ public class SymbolEntry {
      */
     public int getFunctionIndex() {
         return functionIndex;
+    }
+
+    /**
+     * @return the blockIndex
+     */
+    public int getBlockIndex() {
+        return blockIndex;
     }
 
     /**

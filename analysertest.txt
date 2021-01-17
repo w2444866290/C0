@@ -1,5 +1,6 @@
 fn main()->void{
     while 0 {
-        continue;
+        let i:int = 1;
     }
+    let i:int = 1;
 }

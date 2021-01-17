@@ -40,6 +40,9 @@ public final class Analyser {
     /** 函数个数 */
     int funcCount = 1;
 
+    /** 作用域个数 */
+    int blockCount = 0;
+
     /** 标准库函数个数 */
     int stdCount = 0;
 
@@ -320,8 +323,8 @@ public final class Analyser {
         if (se != null && !se.isGlobal()) {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
         } else {
-            this.symbolTable.push(new SymbolEntry(name, type, localIndex, GlobalIndex,
-                    FunctionIndex, isFuncIdent, isConstant, isInitialized, getNextVariableOffset()));
+            this.symbolTable.push(new SymbolEntry(name, type, localIndex, GlobalIndex, FunctionIndex,
+                    blockCount, isFuncIdent, isConstant, isInitialized, getNextVariableOffset()));
         }
     }
 
@@ -333,6 +336,22 @@ public final class Analyser {
         for (int i = 0; i < symbolTable.size(); i++) {
             var se = symbolTable.get(i);
             if (se.getFunctionIndex() == funcCount && !se.isFunction() && !se.isGlobal()){
+                if (symbolTable.peek().equals(se))
+                    symbolTable.pop();
+                else
+                    symbolTable.remove(se);
+            }
+        }
+    }
+
+    /**
+     * 作用域退出后，删除符号表中的局部变量
+     *
+     */
+    private void deleteSymbolByBlock() {
+        for (int i = 0; i < symbolTable.size(); i++) {
+            var se = symbolTable.get(i);
+            if (se.getBlockIndex() == blockCount && !se.isFunction() && !se.isGlobal()){
                 if (symbolTable.peek().equals(se))
                     symbolTable.pop();
                 else
@@ -781,6 +800,7 @@ public final class Analyser {
     }
 
     private Boolean analyseBlockStatement(Boolean funcNeedRet) throws CompileError {
+        blockCount++;
         expect(TokenType.L_BRACE);
 
         // 确认类型函数最后一个语句为返回语句
@@ -791,6 +811,8 @@ public final class Analyser {
                 isRet = true;
         }
 
+        deleteSymbolByBlock();
+        blockCount--;
         return isRet;
     }
 
@@ -1245,7 +1267,7 @@ public final class Analyser {
         switch ((String) fn_nameToken.getValue()) {
             case "getint":
                 if (!genInstructions) return new SymbolEntry("true", "Boolean", -1,
-                        -1, -1, false, false, false, 0);
+                        -1, -1, blockCount, false, false, false, 0);
 
                 isDeclared =  getFuncSymbolEntry("getint");
                 if (isDeclared == null) {
@@ -1258,11 +1280,11 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
                 curType = "int";
                 return new SymbolEntry("getint", "int", -1, globCount,
-                        funcCount+stdCount, true, true, true,
+                        funcCount+stdCount, blockCount, true, true, true,
                         getOffset("getint", fn_nameToken.getStartPos()));
             case "getdouble":
                 if (!genInstructions) return new SymbolEntry("true", "Boolean", -1,
-                        -1, -1, false, false, false, 0);
+                        -1, -1, blockCount, false, false, false, 0);
 
                 isDeclared =  getFuncSymbolEntry("getdouble");
                 if (isDeclared == null) {
@@ -1275,11 +1297,11 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
                 curType = "double";
                 return new SymbolEntry("getdouble", "double", -1, globCount,
-                        funcCount+stdCount, true, true, true,
+                        funcCount+stdCount, blockCount, true, true, true,
                         getOffset("getdouble", fn_nameToken.getStartPos()));
             case "getchar":
                 if (!genInstructions) return new SymbolEntry("true", "Boolean", -1,
-                        -1, -1, false, false, false, 0);
+                        -1, -1, blockCount, false, false, false, 0);
 
                 isDeclared =  getFuncSymbolEntry("getchar");
                 if (isDeclared == null) {
@@ -1292,11 +1314,11 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
                 curType = "int";
                 return new SymbolEntry("getchar", "int", -1, -1,
-                        funcCount+stdCount, true, true, true,
+                        funcCount+stdCount, blockCount, true, true, true,
                         getOffset("getchar", fn_nameToken.getStartPos()));
             case "putint":
                 if (!genInstructions) return new SymbolEntry("true", "Boolean", globCount,
-                        -1, -1, false, false, false, 0);
+                        -1, -1, blockCount, false, false, false, 0);
 
                 isDeclared =  getFuncSymbolEntry("putint");
                 if (isDeclared == null) {
@@ -1310,11 +1332,11 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.callname, isDeclared.getGlobalIndex(), funcCount));
                 curType = "void";
                 return new SymbolEntry("putint", "void", -1, globCount,
-                        funcCount+stdCount, true, true, true,
+                        funcCount+stdCount, blockCount, true, true, true,
                         getOffset("putint", fn_nameToken.getStartPos()));
             case "putdouble":
                 if (!genInstructions) return new SymbolEntry("true", "Boolean", -1,
-                        -1, -1, false, false, false, 0);
+                        -1, -1, blockCount, false, false, false, 0);
 
                 isDeclared =  getFuncSymbolEntry("putdouble");
                 if (isDeclared == null) {
@@ -1328,11 +1350,11 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
                 curType = "void";
                 return new SymbolEntry("putdouble", "void", -1, globCount,
-                        funcCount+stdCount, true, true, true,
+                        funcCount+stdCount, blockCount, true, true, true,
                         getOffset("putdouble", fn_nameToken.getStartPos()));
             case "putchar":
                 if (!genInstructions) return new SymbolEntry("true", "Boolean", -1,
-                        -1, -1, false, false, false, 0);
+                        -1, -1, blockCount, false, false, false, 0);
 
                 isDeclared =  getFuncSymbolEntry("putchar");
                 if (isDeclared == null) {
@@ -1346,11 +1368,11 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
                 curType = "void";
                 return new SymbolEntry("putchar", "void", -1, globCount,
-                        funcCount+stdCount, true, true, true,
+                        funcCount+stdCount, blockCount, true, true, true,
                         getOffset("putchar", fn_nameToken.getStartPos()));
             case "putstr":
                 if (!genInstructions) return new SymbolEntry("true", "Boolean", -1,
-                        -1, -1, false, false, false, 0);
+                        -1, -1, blockCount, false, false, false, 0);
 
                 isDeclared =  getFuncSymbolEntry("putstr");
                 if (isDeclared == null) {
@@ -1364,11 +1386,11 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
                 curType = "void";
                 return new SymbolEntry("putstr", "void", -1, globCount,
-                        funcCount+stdCount, true, true, true,
+                        funcCount+stdCount, blockCount, true, true, true,
                         getOffset("putstr", fn_nameToken.getStartPos()));
             case "putln":
                 if (!genInstructions) return new SymbolEntry("true", "Boolean", -1,
-                        -1, -1, false, false, false, 0);
+                        -1, -1, blockCount, false, false, false, 0);
 
                 isDeclared =  getFuncSymbolEntry("putln");
                 if (isDeclared == null) {
@@ -1381,7 +1403,7 @@ public final class Analyser {
                 instructions.add(new Instruction(Operation.callname,  isDeclared.getGlobalIndex(), funcCount));
                 curType = "void";
                 return new SymbolEntry("putln", "void", -1, globCount,
-                        funcCount+stdCount, true, true, true,
+                        funcCount+stdCount, blockCount, true, true, true,
                         getOffset("putln", fn_nameToken.getStartPos()));
             default:
                 return null;
