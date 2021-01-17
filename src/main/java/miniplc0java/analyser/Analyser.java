@@ -818,6 +818,7 @@ public final class Analyser {
 
     private void analyseFunction() throws CompileError {
         code = new ArrayList<>();
+        bblockCount = 0;
 
         expect(TokenType.FN_KW);
 
