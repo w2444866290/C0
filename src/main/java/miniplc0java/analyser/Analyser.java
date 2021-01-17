@@ -853,6 +853,17 @@ public final class Analyser {
 
         analyseBlockStatement(needRet);
 
+        // 如果是void类型，参数从 arga0 开始
+        if (!needRet) {
+            for (Instruction ins:
+                    instructions) {
+                if (ins.getFuncIndex() == funcCount && ins.getOpt() == Operation.arga)  {
+                    var x = (int) ins.getX();
+                    ins.setX(--x);
+                }
+            }
+        }
+
         // 判断分支是否返回
         var isRet = funcIsRet(1);
 
