@@ -764,11 +764,19 @@ public final class Analyser {
         var BBprev = getBBlock(BBNo);
         BBprev.setGoto(bblockCount);
         var BBwhile = getBBlock(bblockCount);
+        var curBBlock = bblockCount;
 
         var isRet = analyseBlockStatement(funNeedRet);
 
         BBprev.setGoto(bblockCount+1);
-        BBwhile.setGoto(bblockCount+1);
+        if (bblockCount == curBBlock)
+            BBwhile.setGoto(bblockCount+1);
+        else {
+            BBwhile.setGoto(bblockCount);
+            var BBout = getBBlock(bblockCount);
+            BBout.setGoto(bblockCount+1);
+        }
+
 
         var end = instructions.size();
         var loopLength = end - afterJudge;

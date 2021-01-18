@@ -1,30 +1,53 @@
-fn is_odd(x:int)->int{
-	return(x/2*2)-x;
-}
-fn fastpow(base:int,exp:int)->int{
-	let res:int=1;
-	if exp<0{
-		return 0;
-	}
-	while exp>0{
-		if is_odd(exp){
-			res=res*base;
-		}
-		base=base*base;
-		exp=exp/2;
-	}
-	return res;
+let g:int;
+let h:int;
+let f:int;
+let e:int;
+fn EightWhile()->int{
+    let a:int;
+    let b:int;
+    let c:int;
+    let d:int;
+    a=5;
+    b=6;
+    c=7;
+    d=10;
+    while (a<20){
+        a=a+3;
+        while (b<10){
+            b=b+1;
+            while (c==7){
+                c=c-1;
+                while (d<20){
+                    d=d+3;
+                    while (e>1){
+                        e=e-1;
+                        while (f>2){
+                            f=f-2;
+                            while (g<3){
+                                g=g+10;
+                                while (h<10){
+                                    h=h+8;
+                                }
+                            h=h-1;
+                            }
+                        g=g-8;
+                        }
+                    f=f+1;
+                    }
+                e=e+1;
+                }
+            d=d-1;
+            }
+        c=c+1;
+        }
+    b=b-2;
+    }
+    return (a+(b+d)+c)-(e+d-g+h);
 }
 fn main()->void{
-	let count:int;
-	count=getint();
-	while count>0{
-		let base:int;
-		let exp:int;
-		base=getint();
-		exp=getint();
-		putint(fastpow(base,exp));
-		putln();
-		count=count-1;
-	}
+    g=1;
+    h=2;
+    e=4;
+    f=6;
+    putint(EightWhile());
 }
